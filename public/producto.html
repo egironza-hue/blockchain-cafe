@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Producto - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="page-header">
+            <h1>Detalle del Producto</h1>
+            <p>Información completa del café de un lote específico registrado en la blockchain</p>
+        </section>
+
+        <div id="producto-detalle">
+            <!-- El detalle del producto se cargará dinámicamente -->
+        </div>
+
+        <!-- Sección de QR de trazabilidad -->
+        <section class="page-header" style="margin-top: 3rem;">
+            <h2>QR de Trazabilidad</h2>
+            <p>Escanea este código para ver la trazabilidad completa del lote</p>
+        </section>
+
+        <div class="row">
+            <div class="col">
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div id="qr-container"></div>
+                        <p class="mt-2" id="qr-link-text"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de trazabilidad visual del producto -->
+        <section class="page-header" style="margin-top: 3rem;">
+            <h2>Trazabilidad del Producto</h2>
+            <p>Resumen del recorrido del café desde el origen hasta el destino</p>
+        </section>
+
+        <div class="timeline" id="timeline-producto">
+            <!-- La trazabilidad del producto se cargará aquí reutilizando el estilo de la línea de tiempo -->
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Café Blockchain Trace - Sistema de Trazabilidad</p>
+            <p style="opacity: 0.8; font-size: 0.9rem;">© 2026 - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        function obtenerParametroLote() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('lote');
+        }
+
+        function renderProducto(bloqueOrigen) {
+            const contenedor = document.getElementById('producto-detalle');
+            if (!contenedor) return;
+
+            if (!bloqueOrigen || !bloqueOrigen.data || !bloqueOrigen.data.producto) {
+                contenedor.innerHTML = `
+                    <div class="alert alert-error">
+                        No se encontró información de origen para este lote. Vuelve a la <a href="tienda.html">tienda</a>.
+                    </div>
+                `;
+                return;
+            }
+
+            const producto = bloqueOrigen.data.producto;
+            const lote = bloqueOrigen.data.lote || `LOTE-${bloqueOrigen.index}`;
+
+            contenedor.innerHTML = `
+                <div class="row">
+                    <div class="col-3">
+                        <div class="card product-card">
+                            <div class="product-image-wrapper">
+                                <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>${producto.nombre}</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="product-category">${[producto.finca, producto.region].filter(Boolean).join(' - ')}</p>
+                                <p class="product-price" style="margin-bottom: 0.5rem;">${lote}</p>
+                                <p style="margin-bottom: 1.5rem;">${producto.descripcion}</p>
+                                <div style="border-top: 1px solid var(--color-secondary); padding-top: 1rem; margin-top: 1rem;">
+                                    <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">Información del producto</h4>
+                                    <p><strong>Finca:</strong> ${producto.finca || "No especificada"}</p>
+                                    <p><strong>Productor:</strong> ${producto.productor || "No especificado"}</p>
+                                    <p><strong>Región:</strong> ${producto.region || "No especificada"}</p>
+                                    <p><strong>Variedad:</strong> ${producto.variedad || "No especificada"}</p>
+                                    <p><strong>Fecha de cosecha:</strong> ${producto.fechaCosecha || "No especificada"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTrazabilidadProducto(bloques, lote) {
+            const timeline = document.getElementById('timeline-producto');
+            if (!timeline) return;
+
+            if (!bloques || bloques.length === 0) {
+                timeline.innerHTML = `
+                    <div class="alert alert-info">
+                        No hay información de trazabilidad disponible para este producto.
+                    </div>
+                `;
+                return;
+            }
+
+            timeline.innerHTML = "";
+            // Ordenar por timestamp ascendente para mostrar ORIGEN primero y luego DISTRIBUCION
+            const ordenados = [...bloques].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            ordenados.forEach(block => {
+                const tipoRaw = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                const tipo = tipoRaw || 'EVENTO';
+                const fecha = new Date(block.timestamp).toLocaleString('es-ES');
+
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+
+                let contenido = '';
+                let badgeClass = '';
+                let badgeText = '';
+
+                if (tipo === 'ORIGEN' && block.data.producto) {
+                    const p = block.data.producto;
+                    contenido = `
+                        <div style="border-left: 3px solid var(--color-accent); padding-left: 1rem; margin-bottom: 0.5rem;">
+                            <strong style="color: var(--color-accent); display: block; margin-bottom: 0.5rem;">🌱 Información de Origen</strong>
+                            <p><strong>Lote:</strong> ${lote}</p>
+                            ${p.finca ? `<p><strong>Finca:</strong> ${p.finca}</p>` : ''}
+                            ${p.productor ? `<p><strong>Productor:</strong> ${p.productor}</p>` : ''}
+                            ${p.region ? `<p><strong>Región:</strong> ${p.region}</p>` : ''}
+                            ${p.variedad ? `<p><strong>Variedad:</strong> ${p.variedad}</p>` : ''}
+                            ${p.fechaCosecha ? `<p><strong>Fecha de cosecha:</strong> ${p.fechaCosecha}</p>` : ''}
+                        </div>
+                    `;
+                    badgeClass = 'timeline-badge timeline-badge-origen';
+                    badgeText = 'Origen';
+                } else if (tipo === 'DISTRIBUCION') {
+                    contenido = `
+                        <div style="border-left: 3px solid var(--color-primary); padding-left: 1rem; margin-bottom: 0.5rem;">
+                            <strong style="color: var(--color-primary); display: block; margin-bottom: 0.5rem;">🚚 Información de Distribución</strong>
+                            <p><strong>Lote:</strong> ${lote}</p>
+                            ${block.data.empresa ? `<p><strong>Empresa:</strong> ${block.data.empresa}</p>` : ''}
+                            ${block.data.destino ? `<p><strong>Destino:</strong> ${block.data.destino}</p>` : ''}
+                            ${block.data.fecha ? `<p><strong>Fecha:</strong> ${block.data.fecha}</p>` : ''}
+                        </div>
+                    `;
+                    badgeClass = 'timeline-badge timeline-badge-distribucion';
+                    badgeText = 'Distribución';
+                } else {
+                    contenido = `<p>Evento de tipo ${tipo}</p>`;
+                    badgeClass = 'timeline-badge timeline-badge-genesis';
+                    badgeText = tipo;
+                }
+
+                item.innerHTML = `
+                    <div class="timeline-card">
+                        <div class="timeline-date">${fecha}</div>
+                        <div class="timeline-title">${tipo === 'ORIGEN' ? 'Origen del Café' : 'Evento de Distribución'}</div>
+                        <div class="timeline-content">
+                            ${contenido}
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-secondary);">
+                                <p style="font-size: 0.85rem; color: #666;"><strong>Hash:</strong> <code>${block.hash.substring(0, 20)}...</code></p>
+                                <p style="font-size: 0.85rem; color: #666;"><strong>Hash Anterior:</strong> <code>${block.previousHash ? block.previousHash.substring(0, 20) + '...' : 'N/A'}</code></p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 0.75rem;">
+                            <span class="${badgeClass}">${badgeText}</span>
+                        </div>
+                    </div>
+                `;
+
+                timeline.appendChild(item);
+            });
+        }
+
+        function generarQR(lote) {
+            const qrContainer = document.getElementById('qr-container');
+            const qrLinkText = document.getElementById('qr-link-text');
+            if (!qrContainer || !qrLinkText) return;
+
+            const urlTrazabilidad = `${window.location.origin}/trazabilidad.html?lote=${encodeURIComponent(lote)}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(urlTrazabilidad)}`;
+
+            qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR de trazabilidad" style="max-width: 220px; height: auto;" />`;
+            qrLinkText.innerHTML = `Enlace de trazabilidad: <code>${urlTrazabilidad}</code>`;
+        }
+
+        async function cargarDatosProducto() {
+            const lote = obtenerParametroLote();
+            const contenedor = document.getElementById('producto-detalle');
+
+            if (!lote) {
+                if (contenedor) {
+                    contenedor.innerHTML = '<div class="alert alert-error">No se proporcionó un ID de lote en la URL.</div>';
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/getChain');
+                const data = await response.json();
+
+                if (!response.ok || !data.chain) {
+                    throw new Error('No se pudo obtener la cadena');
+                }
+
+                const cadena = data.chain;
+                const bloquesLote = cadena.filter(b => {
+                    const loteBlock = b.data && b.data.lote ? String(b.data.lote).trim() : '';
+                    return loteBlock === String(lote).trim();
+                });
+
+                const bloqueOrigen = bloquesLote.find(b => {
+                    const tipo = b.data && b.data.tipo ? String(b.data.tipo).toUpperCase() : '';
+                    return tipo === 'ORIGEN';
+                });
+
+                renderProducto(bloqueOrigen);
+                renderTrazabilidadProducto(bloquesLote, lote);
+                generarQR(lote);
+            } catch (error) {
+                console.error('Error al cargar datos del producto:', error);
+                if (contenedor) {
+                    contenedor.innerHTML = '<div class="alert alert-error">No se pudo cargar la información del producto desde la blockchain.</div>';
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarDatosProducto();
+        });
+    </script>
+</body>
+
+</html>
+

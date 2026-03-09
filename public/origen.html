@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Origen - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container">
+        <div class="page-header">
+            <h2>Registro de Café - Productor</h2>
+            <p>Registra el origen del café en la blockchain (crea el primer bloque de trazabilidad)</p>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Información del Café</h3>
+                    </div>
+                    <form id="formOrigen">
+                        <div class="form-group">
+                            <label class="form-label" for="lote">Lote</label>
+                            <input type="text" class="form-input" id="lote" placeholder="Ingrese el número de lote"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="nombreProducto">Nombre del producto</label>
+                            <input type="text" class="form-input" id="nombreProducto"
+                                placeholder="Ej: Café Premium 500g" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="finca">Finca</label>
+                            <input type="text" class="form-input" id="finca" placeholder="Nombre de la finca" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="productor">Productor</label>
+                            <input type="text" class="form-input" id="productor" placeholder="Nombre del productor"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="region">Región</label>
+
+
+
+
+
+
+                            <div class="combo-container">
+                                <select id="region" class="combo-box">
+
+                                    <option value="">Seleccione región</option>
+                                    <option value="Cauca">Cauca</option>
+                                    <option value="Huila">Huila</option>
+                                    <option value="Nariño">Nariño</option>
+                                    <option value="Tolima">Tolima</option>
+                                    <option value="Antioquia">Antioquia</option>
+                                    <option value="Sierra Nevada">Sierra Nevada</option>
+
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="variedad">Variedad</label>
+
+                                <div class="combo-container">
+                                    <select id="variedad" class="combo-box">
+
+                                        <option value="">Seleccione variedad</option>
+
+                                        <option value="Castillo">Castillo</option>
+                                        <option value="Caturra">Caturra</option>
+                                        <option value="Colombia">Colombia</option>
+                                        <option value="Typica">Typica</option>
+                                        <option value="Bourbon">Bourbon</option>
+                                        <option value="Tabi">Tabi</option>
+
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="fechaCosecha">Fecha de cosecha</label>
+                                <input type="date" class="form-input" id="fechaCosecha" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="imagenProducto">URL de imagen del producto</label>
+                                <input type="url" class="form-input" id="imagenProducto" placeholder="https://..."
+                                    value="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=400">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="descripcionProducto">Descripción detallada</label>
+                                <textarea id="descripcionProducto" class="form-textarea"
+                                    placeholder="Describe el perfil de sabor, proceso de beneficio, notas (chocolate, caramelo, cítricos, etc.)"
+                                    rows="4" required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">Registrar Café en
+                                Blockchain</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("formOrigen").addEventListener("submit", async e => {
+            e.preventDefault();
+
+            const lote = document.getElementById("lote").value;
+
+            const payload = {
+                tipo: "ORIGEN",
+                lote: lote,
+                producto: {
+                    nombre: document.getElementById("nombreProducto").value,
+                    descripcion: document.getElementById("descripcionProducto").value,
+                    finca: document.getElementById("finca").value,
+                    productor: document.getElementById("productor").value,
+                    fechaCosecha: document.getElementById("fechaCosecha").value,
+                    imagen: document.getElementById("imagenProducto").value,
+                    region: document.getElementById("region").value,
+                    variedad: document.getElementById("variedad").value
+                }
+            };
+
+            try {
+                const response = await fetch("/api/addBlock", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    await response.json();
+                    alert("✅ Bloque de ORIGEN creado exitosamente en la blockchain");
+                    document.getElementById("formOrigen").reset();
+                } else {
+                    alert("❌ Error al registrar el café. Por favor, intenta nuevamente.");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("❌ Error de conexión. Por favor, verifica que el servidor esté corriendo.");
+            }
+        });
+    </script>
+</body>
+
+</html>

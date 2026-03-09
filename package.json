@@ -1,0 +1,25 @@
+{
+  "name": "blockchain-cafe-trazabilidad",
+  "version": "1.0.0",
+  "description": "Sistema de trazabilidad de café usando blockchain",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "blockchain",
+    "cafe",
+    "trazabilidad",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+        <div class="container">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; font-weight: 700;">Trazabilidad de Café con Blockchain</h1>
+            <p style="font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9;">Sistema seguro y transparente para rastrear
+                el origen y distribución de tu café</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="origen.html" class="btn btn-secondary" style="background: var(--color-accent);">Registrar
+                    Origen</a>
+                <a href="trazabilidad.html" class="btn btn-outline" style="border-color: white; color: white;">Ver
+                    Trazabilidad</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contenedor Principal -->
+    <div class="container">
+        <!-- Características del Sistema -->
+        <section class="page-header">
+            <h2>¿Por qué usar Blockchain para Trazabilidad?</h2>
+            <p>Garantiza transparencia, seguridad e inmutabilidad en cada paso del proceso</p>
+        </section>
+
+        <div class="row">
+            <div class="col-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-shield-halved"
+                                style="color: var(--color-accent); margin-right: 0.5rem;"></i> Seguridad</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Cada transacción está protegida con criptografía avanzada. Los datos no pueden ser
+                            modificados una vez registrados.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-eye" style="color: var(--color-accent); margin-right: 0.5rem;"></i>
+                            Transparencia</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Acceso completo al historial de cada lote de café, desde su origen hasta su destino final.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-link" style="color: var(--color-accent); margin-right: 0.5rem;"></i>
+                            Trazabilidad</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Sigue cada movimiento del café a través de la cadena de suministro con total precisión.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Funcionalidades -->
+        <section class="page-header" style="margin-top: 4rem;">
+            <h2>Funcionalidades del Sistema</h2>
+            <p>Gestiona todo el ciclo de vida del café</p>
+        </section>
+
+        <div class="row">
+            <div class="col-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-seedling"
+                                style="color: var(--color-primary); margin-right: 0.5rem;"></i> Registro de Origen</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Registra el origen del café con información detallada:</p>
+                        <ul style="list-style: none; padding-left: 0; margin-top: 1rem;">
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Número de lote</li>
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Finca de origen</li>
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Región geográfica
+                            </li>
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Variedad del grano
+                            </li>
+                        </ul>
+                        <a href="origen.html" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Registrar
+                            Origen</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-truck" style="color: var(--color-primary); margin-right: 0.5rem;"></i>
+                            Registro de Distribución</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Registra el envío y distribución del café:</p>
+                        <ul style="list-style: none; padding-left: 0; margin-top: 1rem;">
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Empresa distribuidora
+                            </li>
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Destino del envío
+                            </li>
+                            <li style="padding: 0.5rem 0;"><i class="fa-solid fa-check"
+                                    style="color: var(--color-accent); margin-right: 0.5rem;"></i> Trazabilidad del lote
+                            </li>
+                        </ul>
+                        <a href="distribuidor.html" class="btn btn-primary"
+                            style="margin-top: 1rem; width: 100%;">Registrar Distribución</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos Destacados -->
+        <section class="page-header" style="margin-top: 4rem;">
+            <h2>Productos Destacados</h2>
+            <p>Explora algunos de nuestros cafés con trazabilidad en blockchain</p>
+        </section>
+
+        <div id="productos-destacados" class="row productos-grid">
+            <!-- Los productos destacados se cargarán aquí dinámicamente -->
+        </div>
+
+        <!-- Estadísticas de la Blockchain -->
+        <section class="page-header" style="margin-top: 4rem;">
+            <h2>Estado de la Blockchain</h2>
+            <p>Información en tiempo real del sistema</p>
+        </section>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-cube" style="color: var(--color-primary); margin-right: 0.5rem;"></i>
+                            Información de la Cadena</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="blockchain-stats" style="text-align: center; padding: 2rem;">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 1rem;">Cargando información...</p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="trazabilidad.html" class="btn btn-primary btn-block">Ver Trazabilidad Completa</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cómo Funciona -->
+        <section class="page-header" style="margin-top: 4rem;">
+            <h2>¿Cómo Funciona?</h2>
+            <p>Proceso simple y seguro en 3 pasos</p>
+        </section>
+
+        <div class="row">
+            <div class="col-3">
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--color-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; font-weight: bold;">
+                            1</div>
+                        <h3 style="color: var(--color-primary); margin-bottom: 1rem;">Registra el Origen</h3>
+                        <p>El productor registra la información del café en la blockchain cuando se cosecha.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--color-accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; font-weight: bold;">
+                            2</div>
+                        <h3 style="color: var(--color-primary); margin-bottom: 1rem;">Registra la Distribución</h3>
+                        <p>El distribuidor registra cada movimiento del café hacia su destino.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--color-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; font-weight: bold;">
+                            3</div>
+                        <h3 style="color: var(--color-primary); margin-bottom: 1rem;">Consulta la Trazabilidad</h3>
+                        <p>Cualquier persona puede verificar el historial completo del café en cualquier momento.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer
+        style="background: var(--color-primary); color: white; padding: 2rem; margin-top: 4rem; text-align: center;">
+        <div class="container">
+            <p style="margin-bottom: 1rem;">Café Blockchain Trace - Sistema de Trazabilidad</p>
+            <p style="opacity: 0.8; font-size: 0.9rem;">© 2026 - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <script src="js/productos.js"></script>
+    <script>
+        // Cargar estadísticas de la blockchain
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetch('/api/getChain');
+                const data = await response.json();
+
+                const statsDiv = document.getElementById('blockchain-stats');
+
+                if (data.chain && data.chain.length > 0) {
+                    const totalBloques = data.length;
+                    const bloquesOrigen = data.chain.filter(b => b.data.tipo === 'origen').length;
+                    const bloquesDistribucion = data.chain.filter(b => b.data.tipo === 'distribucion').length;
+
+                    statsDiv.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; margin-bottom: 1rem;">
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: bold; color: var(--color-primary);">${totalBloques}</div>
+                                <div style="color: var(--color-text-dark);">Total de Bloques</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: bold; color: var(--color-accent);">${bloquesOrigen}</div>
+                                <div style="color: var(--color-text-dark);">Registros de Origen</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: bold; color: var(--color-primary);">${bloquesDistribucion}</div>
+                                <div style="color: var(--color-text-dark);">Distribuciones</div>
+                            </div>
+                        </div>
+                        <p style="color: var(--color-accent); font-weight: 600; margin-top: 1rem;">
+                            <i class="fa-solid fa-check-circle"></i> Sistema funcionando correctamente
+                        </p>
+                    `;
+                } else {
+                    statsDiv.innerHTML = `
+                        <p style="color: var(--color-text-dark);">No hay bloques registrados aún.</p>
+                        <p style="color: var(--color-text-dark); margin-top: 0.5rem;">Comienza registrando el origen de un café.</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error al cargar estadísticas:', error);
+                document.getElementById('blockchain-stats').innerHTML = `
+                    <div class="alert alert-error">
+                        Error al conectar con el servidor. Asegúrate de que el servidor esté corriendo.
+                    </div>
+                `;
+            }
+        }
+
+        function formatearPrecio(valor) {
+            try {
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    maximumFractionDigits: 0
+                }).format(valor);
+            } catch {
+                return valor + ' COP';
+            }
+        }
+
+        // Cargar productos destacados
+        function cargarProductosDestacados() {
+            if (!window.productos || !Array.isArray(window.productos)) return;
+
+            const contenedor = document.getElementById('productos-destacados');
+            if (!contenedor) return;
+
+            const destacados = window.productos.filter(p => p.destacado);
+
+            if (destacados.length === 0) {
+                contenedor.innerHTML = '<p>No hay productos destacados disponibles en este momento.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '';
+
+            destacados.forEach(producto => {
+                const col = document.createElement('div');
+                col.className = 'col-3';
+
+                let etiqueta = '';
+                if (producto.destacado) etiqueta = 'Destacado';
+                if (producto.masVendido) etiqueta = 'Más vendido';
+                if (producto.nuevo) etiqueta = 'Nuevo';
+
+                col.innerHTML = `
+                    <article class="card product-card" data-producto-id="${producto.id}">
+                        <div class="product-image-wrapper">
+                            <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" />
+                            ${etiqueta ? `<span class="product-tag">${etiqueta}</span>` : ''}
+                        </div>
+                        <div class="card-body">
+                            <h3 class="product-title">${producto.nombre}</h3>
+                            <p class="product-category">${producto.categoria}</p>
+                            <p class="product-description">${producto.descripcionCorta}</p>
+                            <div class="product-footer">
+                                <span class="product-price">${formatearPrecio(producto.precio)}</span>
+                                <a href="producto.html?id=${producto.id}" class="btn btn-secondary product-link">
+                                    Ver detalle
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                `;
+
+                contenedor.appendChild(col);
+            });
+        }
+
+        // Cargar contenido dinámico al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarEstadisticas();
+            cargarProductosDestacados();
+        });
+    </script>
+    </body>
+
+</html>

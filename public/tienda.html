@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda de Café - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="page-header">
+            <h1>Tienda de Productos de Café</h1>
+            <p>Explora todos los productos disponibles y regístralos en la blockchain</p>
+        </section>
+
+        <!-- Filtros de productos -->
+        <section class="filters-bar card">
+            <div class="filters-row">
+                <div class="filters-group">
+                    <label for="filtro-busqueda" class="form-label">Buscar</label>
+                    <input type="text" id="filtro-busqueda" class="form-input" placeholder="Nombre del producto..." />
+                </div>
+                <div class="filters-group">
+                    <label for="filtro-categoria" class="form-label">Categoría</label>
+                    <select id="filtro-categoria" class="form-select">
+                        <option value="todas">Todas las categorías</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filters-group filters-tags">
+                    <span class="form-label">Etiquetas</span>
+                    <label class="filter-tag">
+                        <input type="checkbox" id="filtro-destacado">
+                        <span>Destacado</span>
+                    </label>
+                    <label class="filter-tag">
+                        <input type="checkbox" id="filtro-masvendido">
+                        <span>Más vendido</span>
+                    </label>
+                    <label class="filter-tag">
+                        <input type="checkbox" id="filtro-nuevo">
+                        <span>Nuevo</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Listado de productos -->
+        <section class="page-header" style="margin-top: 2rem;">
+            <h2>Productos disponibles</h2>
+            <p>Selecciona un producto para ver más detalles o registrarlo en la cadena de bloques</p>
+        </section>
+
+        <div id="lista-productos" class="row productos-grid">
+            <!-- Las tarjetas de productos se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Café Blockchain Trace - Sistema de Trazabilidad</p>
+            <p style="opacity: 0.8; font-size: 0.9rem;">© 2026 - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        let productosOrigen = [];
+
+        const filtros = {
+            busqueda: '',
+            categoria: 'todas',
+            destacado: false,
+            masVendido: false,
+            nuevo: false
+        };
+
+        function aplicarFiltros(productos) {
+            return productos.filter(p => {
+                if (filtros.busqueda) {
+                    const texto = filtros.busqueda.toLowerCase();
+                    const coincideNombre = (p.nombre || '').toLowerCase().includes(texto);
+                    const coincideDesc = (p.descripcionCorta || '').toLowerCase().includes(texto);
+                    if (!coincideNombre && !coincideDesc) return false;
+                }
+
+                if (filtros.categoria !== 'todas' && p.categoria !== filtros.categoria) {
+                    return false;
+                }
+
+                if (filtros.destacado && !p.destacado) return false;
+                if (filtros.masVendido && !p.masVendido) return false;
+                if (filtros.nuevo && !p.nuevo) return false;
+
+                return true;
+            });
+        }
+
+        function renderListaProductos() {
+            const contenedor = document.getElementById('lista-productos');
+            if (!contenedor) return;
+
+            if (!Array.isArray(productosOrigen) || productosOrigen.length === 0) {
+                contenedor.innerHTML = '<p>No hay productos de ORIGEN registrados en la blockchain.</p>';
+                return;
+            }
+
+            const productosFiltrados = aplicarFiltros(productosOrigen);
+
+            if (productosFiltrados.length === 0) {
+                contenedor.innerHTML = '<p>No se encontraron productos con los filtros seleccionados.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = '';
+
+            productosFiltrados.forEach(producto => {
+                const col = document.createElement('div');
+                col.className = 'col-3';
+
+                col.innerHTML = `
+                    <article class="card product-card" data-producto-id="${producto.id}">
+                        <div class="product-image-wrapper">
+                            <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" />
+                            ${producto.etiqueta ? `<span class="product-tag">${producto.etiqueta}</span>` : ''}
+                        </div>
+                        <div class="card-body">
+                            <h3 class="product-title">${producto.nombre}</h3>
+                            <p class="product-category">${producto.origenTexto}</p>
+                            <p class="product-description">${producto.descripcionCorta}</p>
+                            <div class="product-footer">
+                                <span class="product-price">${producto.lote}</span>
+                                <div style="display:flex; flex-direction:column; gap:0.25rem; align-items:flex-end;">
+                                    <a href="producto.html?lote=${encodeURIComponent(producto.lote)}" class="btn btn-secondary product-link">
+                                        Ver detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+
+                contenedor.appendChild(col);
+            });
+        }
+
+        function inicializarFiltros() {
+            const inputBusqueda = document.getElementById('filtro-busqueda');
+            const selectCategoria = document.getElementById('filtro-categoria');
+            const chkDestacado = document.getElementById('filtro-destacado');
+            const chkMasVendido = document.getElementById('filtro-masvendido');
+            const chkNuevo = document.getElementById('filtro-nuevo');
+
+            if (inputBusqueda) {
+                inputBusqueda.addEventListener('input', (e) => {
+                    filtros.busqueda = e.target.value || '';
+                    renderListaProductos();
+                });
+            }
+
+            if (selectCategoria) {
+                selectCategoria.addEventListener('change', (e) => {
+                    filtros.categoria = e.target.value || 'todas';
+                    renderListaProductos();
+                });
+            }
+
+            if (chkDestacado) {
+                chkDestacado.addEventListener('change', (e) => {
+                    filtros.destacado = e.target.checked;
+                    renderListaProductos();
+                });
+            }
+
+            if (chkMasVendido) {
+                chkMasVendido.addEventListener('change', (e) => {
+                    filtros.masVendido = e.target.checked;
+                    renderListaProductos();
+                });
+            }
+
+            if (chkNuevo) {
+                chkNuevo.addEventListener('change', (e) => {
+                    filtros.nuevo = e.target.checked;
+                    renderListaProductos();
+                });
+            }
+        }
+
+        async function cargarProductosDesdeBlockchain() {
+            try {
+                const response = await fetch('/api/getChain');
+                const data = await response.json();
+
+                if (!response.ok || !data.chain) {
+                    throw new Error('No se pudo obtener la cadena');
+                }
+
+                // Filtrar bloques de tipo ORIGEN
+                const bloquesOrigen = data.chain.filter(b => {
+                    const tipo = b.data && b.data.tipo ? String(b.data.tipo).toUpperCase() : '';
+                    return tipo === 'ORIGEN' && b.data.producto;
+                });
+
+                // Mapear a estructura de producto para la tienda
+                productosOrigen = bloquesOrigen.map((b, index) => {
+                    const p = b.data.producto;
+                    const descripcion = p.descripcion || '';
+                    const descripcionCorta = descripcion.length > 120
+                        ? descripcion.substring(0, 117) + '...'
+                        : descripcion;
+
+                    return {
+                        id: index + 1,
+                        lote: b.data.lote || `LOTE-${b.index}`,
+                        nombre: p.nombre || `Lote ${b.data.lote || b.index}`,
+                        finca: p.finca || '',
+                        productor: p.productor || '',
+                        region: p.region || '',
+                        variedad: p.variedad || '',
+                        descripcionCorta,
+                        imagen: p.imagen || 'img/cafe-banner.jpg',
+                        origenTexto: [p.finca, p.region].filter(Boolean).join(' - '),
+                        etiqueta: 'Origen'
+                    };
+                });
+
+                // Inicializar categorías en base a región / variedad
+                const select = document.getElementById('filtro-categoria');
+                if (select) {
+                    const set = new Set();
+                    productosOrigen.forEach(p => {
+                        if (p.region) set.add(p.region);
+                        if (p.variedad) set.add(p.variedad);
+                    });
+                    Array.from(set).forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        select.appendChild(option);
+                    });
+                }
+
+                renderListaProductos();
+            } catch (error) {
+                console.error('Error al cargar productos desde la blockchain:', error);
+                const contenedor = document.getElementById('lista-productos');
+                if (contenedor) {
+                    contenedor.innerHTML = '<div class="alert alert-error">No se pudieron cargar los productos desde la blockchain.</div>';
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            inicializarFiltros();
+            cargarProductosDesdeBlockchain();
+        });
+    </script>
+</body>
+
+</html>
+

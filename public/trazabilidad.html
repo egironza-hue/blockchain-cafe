@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trazabilidad - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container">
+        <div class="page-header">
+            <h1>Trazabilidad del Café</h1>
+            <p>Historial completo de la cadena de bloques o de un lote específico</p>
+        </div>
+
+        <!-- Línea de Tiempo -->
+        <div class="timeline" id="timeline">
+            <!-- Los bloques se cargarán aquí dinámicamente -->
+        </div>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-primary" onclick="cargarTrazabilidad()">Actualizar Trazabilidad</button>
+        </div>
+    </div>
+
+    <script>
+        function obtenerParametroLote() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('lote');
+        }
+
+        async function cargarTrazabilidad() {
+            try {
+                const response = await fetch('/api/getChain');
+                const data = await response.json();
+
+                const timeline = document.getElementById('timeline');
+                timeline.innerHTML = '';
+
+                if (data.chain && data.chain.length > 0) {
+                    const loteParam = obtenerParametroLote();
+                    let cadena = data.chain;
+
+                    if (loteParam) {
+                        const loteFiltro = String(loteParam).trim();
+                        cadena = data.chain.filter(b => {
+                            const loteBlock = b.data && b.data.lote ? String(b.data.lote).trim() : '';
+                            return loteBlock === loteFiltro;
+                        });
+                    }
+
+                    if (cadena.length === 0) {
+                        timeline.innerHTML = '<div class="alert alert-info">No se encontraron bloques para el lote especificado.</div>';
+                        return;
+                    }
+
+                    // Ordenar por fecha para asegurar ORIGEN -> DISTRIBUCION
+                    cadena.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                    cadena.forEach((block) => {
+                        const timelineItem = document.createElement('div');
+                        timelineItem.className = 'timeline-item';
+
+                        const fecha = new Date(block.timestamp).toLocaleString('es-ES');
+                        const tipoRaw = block.data.tipo || 'genesis';
+                        const tipo = String(tipoRaw).toUpperCase();
+
+                        let badgeClass = 'timeline-badge-genesis';
+                        let badgeText = 'Génesis';
+
+                        if (tipo === 'ORIGEN') {
+                            badgeClass = 'timeline-badge-origen';
+                            badgeText = 'Origen';
+                        } else if (tipo === 'DISTRIBUCION') {
+                            badgeClass = 'timeline-badge-distribucion';
+                            badgeText = 'Distribución';
+                        }
+
+                        // Determinar qué información mostrar según los datos disponibles
+                        let contentHTML = '';
+                        let badgesHTML = '';
+
+                        if (tipo === 'GENESIS') {
+                            // Bloque génesis
+                            contentHTML = `<p>${block.data.message || 'Bloque génesis del sistema'}</p>`;
+                            badgesHTML = `<span class="timeline-badge timeline-badge-genesis">Génesis</span>`;
+                        } else {
+                            // Bloques de ORIGEN / DISTRIBUCION para un lote
+                            contentHTML = '<div style="display: grid; gap: 0.75rem;">';
+
+                            if (tipo === 'ORIGEN' && block.data.producto) {
+                                const p = block.data.producto;
+                                contentHTML += '<div style="border-left: 3px solid var(--color-accent); padding-left: 1rem; margin-bottom: 0.5rem;">';
+                                contentHTML += '<strong style="color: var(--color-accent); display: block; margin-bottom: 0.5rem;">🌱 Información de Origen</strong>';
+                                if (block.data.lote) contentHTML += `<p><strong>Lote:</strong> ${block.data.lote}</p>`;
+                                if (p.finca) contentHTML += `<p><strong>Finca:</strong> ${p.finca}</p>`;
+                                if (p.productor) contentHTML += `<p><strong>Productor:</strong> ${p.productor}</p>`;
+                                if (p.region) contentHTML += `<p><strong>Región:</strong> ${p.region}</p>`;
+                                if (p.variedad) contentHTML += `<p><strong>Variedad:</strong> ${p.variedad}</p>`;
+                                if (p.fechaCosecha) contentHTML += `<p><strong>Fecha de cosecha:</strong> ${p.fechaCosecha}</p>`;
+                                contentHTML += '</div>';
+                                badgesHTML = '<span class="timeline-badge timeline-badge-origen">Origen</span>';
+                            } else if (tipo === 'DISTRIBUCION') {
+                                contentHTML += '<div style="border-left: 3px solid var(--color-primary); padding-left: 1rem; margin-top: 0.5rem;">';
+                                contentHTML += '<strong style="color: var(--color-primary); display: block; margin-bottom: 0.5rem;">🚚 Información de Distribución</strong>';
+                                if (block.data.lote) contentHTML += `<p><strong>Lote:</strong> ${block.data.lote}</p>`;
+                                if (block.data.empresa) contentHTML += `<p><strong>Empresa:</strong> ${block.data.empresa}</p>`;
+                                if (block.data.destino) contentHTML += `<p><strong>Destino:</strong> ${block.data.destino}</p>`;
+                                if (block.data.fecha) contentHTML += `<p><strong>Fecha:</strong> ${block.data.fecha}</p>`;
+                                contentHTML += '</div>';
+                                badgesHTML = '<span class="timeline-badge timeline-badge-distribucion">Distribución</span>';
+                            } else {
+                                // Otros tipos de eventos
+                                contentHTML += `<p style="color: #999;">Evento de tipo ${tipo}</p>`;
+                                badgesHTML = `<span class="timeline-badge timeline-badge-genesis">${tipo}</span>`;
+                            }
+
+                            contentHTML += '</div>';
+                        }
+
+                        timelineItem.innerHTML = `
+                            <div class="timeline-card">
+                                <div class="timeline-date">${fecha}</div>
+                                <div class="timeline-title">Bloque #${block.index}${block.data.lote ? ` - Lote ${block.data.lote}` : ''}</div>
+                                <div class="timeline-content">
+                                    ${contentHTML}
+                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-secondary);">
+                                        <p style="font-size: 0.85rem; color: #666;"><strong>Hash:</strong> <code>${block.hash.substring(0, 20)}...</code></p>
+                                        <p style="font-size: 0.85rem; color: #666;"><strong>Hash Anterior:</strong> <code>${block.previousHash ? block.previousHash.substring(0, 20) + '...' : 'N/A'}</code></p>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 0.75rem;">
+                                    ${badgesHTML}
+                                </div>
+                            </div>
+                        `;
+
+                        timeline.appendChild(timelineItem);
+                    });
+                } else {
+                    timeline.innerHTML = '<div class="alert alert-info">No hay bloques en la cadena aún.</div>';
+                }
+            } catch (error) {
+                console.error('Error al cargar trazabilidad:', error);
+                document.getElementById('timeline').innerHTML =
+                    '<div class="alert alert-error">Error al cargar la trazabilidad. Por favor, intenta nuevamente.</div>';
+            }
+        }
+
+        // Cargar trazabilidad al cargar la página
+        window.addEventListener('DOMContentLoaded', cargarTrazabilidad);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Distribución - Café Blockchain Trace</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">Café Blockchain Trace</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="origen.html">Origen</a></li>
+                <li><a href="distribuidor.html">Distribuidor</a></li>
+                <li><a href="trazabilidad.html">Trazabilidad</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container">
+        <div class="page-header">
+            <h2>Registro de Distribución</h2>
+            <p>Registra el envío y distribución del café (crea un nuevo bloque de distribución)</p>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Información de Distribución</h3>
+                    </div>
+                    <form id="formDistribuidor">
+                        <div class="form-group">
+                            <label class="form-label" for="lote">Lote</label>
+                            <input type="text" class="form-input" id="lote" placeholder="Número de lote a distribuir"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="empresa">Empresa</label>
+                            <input type="text" class="form-input" id="empresa"
+                                placeholder="Nombre de la empresa distribuidora" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="destino">Destino</label>
+
+
+                            <div class="combo-container">
+
+                                <input type="text" id="destino" list="listaDestinos" class="combo-box"
+                                    placeholder="Escriba ciudad o país">
+
+                                <datalist id="listaDestinos">
+
+                                    <!-- Ciudades de Colombia -->
+
+                                    <option value="Bogotá">
+                                    <option value="Medellín">
+                                    <option value="Cali">
+                                    <option value="Barranquilla">
+                                    <option value="Cartagena">
+                                    <option value="Santa Marta">
+                                    <option value="Bucaramanga">
+                                    <option value="Cúcuta">
+                                    <option value="Pereira">
+                                    <option value="Manizales">
+                                    <option value="Armenia">
+                                    <option value="Popayán">
+                                    <option value="Pasto">
+                                    <option value="Ibagué">
+                                    <option value="Neiva">
+                                    <option value="Villavicencio">
+
+                                        <!-- Países -->
+
+                                    <option value="Colombia">
+                                    <option value="Estados Unidos">
+                                    <option value="Canadá">
+                                    <option value="Alemania">
+                                    <option value="España">
+                                    <option value="Francia">
+                                    <option value="Italia">
+                                    <option value="Japón">
+                                    <option value="Corea del Sur">
+                                    <option value="China">
+                                    <option value="Australia">
+                                    <option value="Reino Unido">
+                                    <option value="Países Bajos">
+                                    <option value="Suiza">
+                                    <option value="Suecia">
+                                    <option value="Noruega">
+
+                                </datalist>
+
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="fechaDistribucion">Fecha de distribución</label>
+                            <input type="date" class="form-input" id="fechaDistribucion" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">Registrar Envío en Blockchain</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("formDistribuidor").addEventListener("submit", async e => {
+            e.preventDefault();
+
+            const payload = {
+                tipo: "DISTRIBUCION",
+                lote: document.getElementById("lote").value,
+                empresa: document.getElementById("empresa").value,
+                destino: document.getElementById("destino").value,
+                fecha: document.getElementById("fechaDistribucion").value
+            };
+
+            try {
+                const response = await fetch("/api/addBlock", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    await response.json();
+                    alert("✅ Bloque de DISTRIBUCION creado exitosamente en la blockchain");
+                    document.getElementById("formDistribuidor").reset();
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("Error del servidor:", errorData);
+                    alert(`❌ Error al registrar la distribución: ${errorData.error || errorData.details || 'Error desconocido'}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("❌ Error de conexión. Por favor, verifica que el servidor esté corriendo.");
+            }
+        });
+    </script>
+</body>
+
+</html>
