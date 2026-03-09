@@ -582,4 +582,5 @@ Sistema de Trazabilidad de Café con Blockchain
 
 **Última actualización**: Marzo 2026
 #   b l o c k c h a i n - c a f e  
+ #   b l o c k c h a i n - c a f e  
  
