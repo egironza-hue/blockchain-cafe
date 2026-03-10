@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Origen - Café Blockchain Trace</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 </head>
 
 <body>
@@ -41,6 +42,10 @@
                             <label class="form-label" for="lote">Bolsa de Café</label>
                             <input type="text" class="form-input" id="lote" placeholder="Ingrese el número de bolsa de café"
                                 required>
+                            <div id="lote-error" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background-color: rgba(244, 67, 54, 0.1); border-left: 4px solid #f44336; border-radius: 4px; color: #c62828; font-size: 0.9rem;">
+                                <i class="fa-solid fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                                <span id="lote-error-text"></span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -128,10 +133,96 @@
     </div>
 
     <script>
+        /**
+         * Verifica si una bolsa de café ya tiene un bloque de ORIGEN
+         */
+        async function verificarBolsaExistente(lote) {
+            if (!lote || lote.trim() === '') {
+                return { existe: false, tieneOrigen: false };
+            }
+
+            try {
+                const response = await fetch(`/api/getChain?lote=${encodeURIComponent(lote.trim())}`);
+                const data = await response.json();
+
+                if (data.chain && data.chain.length > 0) {
+                    // Verificar si tiene un bloque de ORIGEN
+                    const tieneOrigen = data.chain.some(block => {
+                        const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                        return tipo === 'ORIGEN';
+                    });
+
+                    return { existe: true, tieneOrigen: tieneOrigen };
+                }
+
+                return { existe: false, tieneOrigen: false };
+            } catch (error) {
+                console.error('Error al verificar bolsa:', error);
+                return { existe: false, tieneOrigen: false, error: true };
+            }
+        }
+
+        /**
+         * Muestra un mensaje de error
+         */
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('lote-error');
+            const errorText = document.getElementById('lote-error-text');
+            errorText.textContent = mensaje;
+            errorDiv.style.display = 'block';
+        }
+
+        /**
+         * Oculta el mensaje de error
+         */
+        function ocultarError() {
+            const errorDiv = document.getElementById('lote-error');
+            errorDiv.style.display = 'none';
+        }
+
+        // Validar cuando el usuario sale del campo de bolsa
+        document.getElementById("lote").addEventListener("blur", async function() {
+            const lote = this.value.trim();
+            if (lote) {
+                const resultado = await verificarBolsaExistente(lote);
+                if (resultado.existe && resultado.tieneOrigen) {
+                    mostrarError(`La bolsa de café "${lote}" ya tiene un bloque de ORIGEN registrado. No se puede crear otro bloque de origen para esta bolsa.`);
+                } else {
+                    ocultarError();
+                }
+            } else {
+                ocultarError();
+            }
+        });
+
+        // Validar antes de enviar el formulario
         document.getElementById("formOrigen").addEventListener("submit", async e => {
             e.preventDefault();
 
-            const lote = document.getElementById("lote").value;
+            const lote = document.getElementById("lote").value.trim();
+            
+            if (!lote) {
+                mostrarError("Por favor, ingrese un número de bolsa de café.");
+                return;
+            }
+
+            // Verificar si la bolsa ya tiene origen
+            const resultado = await verificarBolsaExistente(lote);
+            
+            if (resultado.existe && resultado.tieneOrigen) {
+                mostrarError(`La bolsa de café "${lote}" ya tiene un bloque de ORIGEN registrado. No se puede crear otro bloque de origen para esta bolsa.`);
+                return;
+            }
+
+            // Si hay error en la verificación, continuar pero mostrar advertencia
+            if (resultado.error) {
+                const continuar = confirm("No se pudo verificar si la bolsa existe. ¿Desea continuar de todos modos?");
+                if (!continuar) {
+                    return;
+                }
+            }
+
+            ocultarError();
 
             const payload = {
                 tipo: "ORIGEN",
@@ -159,12 +250,14 @@
                     await response.json();
                     alert("✅ Bloque de ORIGEN creado exitosamente en la blockchain");
                     document.getElementById("formOrigen").reset();
+                    ocultarError();
                 } else {
-                    alert("❌ Error al registrar el café. Por favor, intenta nuevamente.");
+                    const errorData = await response.json().catch(() => ({}));
+                    mostrarError(errorData.error || errorData.details || "Error al registrar el café. Por favor, intenta nuevamente.");
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert("❌ Error de conexión. Por favor, verifica que el servidor esté corriendo.");
+                mostrarError("Error de conexión. Por favor, verifica que el servidor esté corriendo.");
             }
         });
     </script>

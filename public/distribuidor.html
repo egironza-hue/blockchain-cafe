@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Distribución - Café Blockchain Trace</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 </head>
 
 <body>
@@ -41,6 +42,14 @@
                             <label class="form-label" for="lote">Bolsa de Café</label>
                             <input type="text" class="form-input" id="lote" placeholder="Número de bolsa de café a distribuir"
                                 required>
+                            <div id="lote-error" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background-color: rgba(244, 67, 54, 0.1); border-left: 4px solid #f44336; border-radius: 4px; color: #c62828; font-size: 0.9rem;">
+                                <i class="fa-solid fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                                <span id="lote-error-text"></span>
+                            </div>
+                            <div id="lote-info" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background-color: rgba(33, 150, 243, 0.1); border-left: 4px solid #2196F3; border-radius: 4px; color: #1565C0; font-size: 0.9rem;">
+                                <i class="fa-solid fa-check-circle" style="margin-right: 0.5rem;"></i>
+                                <span id="lote-info-text"></span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -116,12 +125,171 @@
     </div>
 
     <script>
+        /**
+         * Verifica si una bolsa de café existe y tiene bloque de ORIGEN y DISTRIBUCION
+         */
+        async function verificarBolsaParaDistribucion(lote) {
+            if (!lote || lote.trim() === '') {
+                return { existe: false, tieneOrigen: false, tieneDistribucion: false };
+            }
+
+            try {
+                const response = await fetch(`/api/getChain?lote=${encodeURIComponent(lote.trim())}`);
+                const data = await response.json();
+
+                if (data.chain && data.chain.length > 0) {
+                    // Verificar si tiene un bloque de ORIGEN
+                    const tieneOrigen = data.chain.some(block => {
+                        const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                        return tipo === 'ORIGEN';
+                    });
+
+                    // Verificar si tiene un bloque de DISTRIBUCION
+                    const tieneDistribucion = data.chain.some(block => {
+                        const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                        return tipo === 'DISTRIBUCION';
+                    });
+
+                    // Obtener nombre del producto si existe
+                    const bloqueOrigen = data.chain.find(block => {
+                        const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                        return tipo === 'ORIGEN' && block.data.producto;
+                    });
+                    const nombreProducto = bloqueOrigen && bloqueOrigen.data.producto ? bloqueOrigen.data.producto.nombre : '';
+
+                    // Obtener información de distribución si existe
+                    const bloqueDistribucion = data.chain.find(block => {
+                        const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                        return tipo === 'DISTRIBUCION';
+                    });
+                    const infoDistribucion = bloqueDistribucion ? {
+                        empresa: bloqueDistribucion.data.empresa || '',
+                        destino: bloqueDistribucion.data.destino || '',
+                        fecha: bloqueDistribucion.data.fecha || ''
+                    } : null;
+
+                    return { 
+                        existe: true, 
+                        tieneOrigen: tieneOrigen, 
+                        tieneDistribucion: tieneDistribucion,
+                        nombreProducto: nombreProducto,
+                        infoDistribucion: infoDistribucion
+                    };
+                }
+
+                return { existe: false, tieneOrigen: false, tieneDistribucion: false };
+            } catch (error) {
+                console.error('Error al verificar bolsa:', error);
+                return { existe: false, tieneOrigen: false, tieneDistribucion: false, error: true };
+            }
+        }
+
+        /**
+         * Muestra un mensaje de error
+         */
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('lote-error');
+            const errorText = document.getElementById('lote-error-text');
+            const infoDiv = document.getElementById('lote-info');
+            
+            errorText.textContent = mensaje;
+            errorDiv.style.display = 'block';
+            infoDiv.style.display = 'none';
+        }
+
+        /**
+         * Muestra un mensaje informativo
+         */
+        function mostrarInfo(mensaje) {
+            const infoDiv = document.getElementById('lote-info');
+            const infoText = document.getElementById('lote-info-text');
+            const errorDiv = document.getElementById('lote-error');
+            
+            infoText.textContent = mensaje;
+            infoDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        /**
+         * Oculta los mensajes
+         */
+        function ocultarMensajes() {
+            document.getElementById('lote-error').style.display = 'none';
+            document.getElementById('lote-info').style.display = 'none';
+        }
+
+        // Validar cuando el usuario sale del campo de bolsa
+        document.getElementById("lote").addEventListener("blur", async function() {
+            const lote = this.value.trim();
+            if (lote) {
+                const resultado = await verificarBolsaParaDistribucion(lote);
+                if (!resultado.existe) {
+                    mostrarError(`La bolsa de café "${lote}" no existe. Primero debe registrar el origen de esta bolsa.`);
+                } else if (!resultado.tieneOrigen) {
+                    mostrarError(`La bolsa de café "${lote}" existe pero no tiene un bloque de ORIGEN. Primero debe registrar el origen.`);
+                } else if (resultado.tieneDistribucion) {
+                    const info = resultado.infoDistribucion;
+                    const detalles = [];
+                    if (info.empresa) detalles.push(`Empresa: ${info.empresa}`);
+                    if (info.destino) detalles.push(`Destino: ${info.destino}`);
+                    if (info.fecha) detalles.push(`Fecha: ${info.fecha}`);
+                    const detallesTexto = detalles.length > 0 ? ` (${detalles.join(', ')})` : '';
+                    mostrarError(`La bolsa de café "${lote}" ya tiene un bloque de DISTRIBUCION registrado${detallesTexto}. No se puede crear otro bloque de distribución para esta bolsa.`);
+                } else {
+                    const nombre = resultado.nombreProducto ? ` - ${resultado.nombreProducto}` : '';
+                    mostrarInfo(`Bolsa de café "${lote}"${nombre} encontrada. Puede registrar la distribución.`);
+                }
+            } else {
+                ocultarMensajes();
+            }
+        });
+
+        // Validar antes de enviar el formulario
         document.getElementById("formDistribuidor").addEventListener("submit", async e => {
             e.preventDefault();
 
+            const lote = document.getElementById("lote").value.trim();
+            
+            if (!lote) {
+                mostrarError("Por favor, ingrese un número de bolsa de café.");
+                return;
+            }
+
+            // Verificar si la bolsa existe y tiene origen
+            const resultado = await verificarBolsaParaDistribucion(lote);
+            
+            if (!resultado.existe) {
+                mostrarError(`La bolsa de café "${lote}" no existe. Primero debe registrar el origen de esta bolsa.`);
+                return;
+            }
+
+            if (!resultado.tieneOrigen) {
+                mostrarError(`La bolsa de café "${lote}" existe pero no tiene un bloque de ORIGEN. Primero debe registrar el origen.`);
+                return;
+            }
+
+            if (resultado.tieneDistribucion) {
+                const info = resultado.infoDistribucion;
+                const detalles = [];
+                if (info && info.empresa) detalles.push(`Empresa: ${info.empresa}`);
+                if (info && info.destino) detalles.push(`Destino: ${info.destino}`);
+                if (info && info.fecha) detalles.push(`Fecha: ${info.fecha}`);
+                const detallesTexto = detalles.length > 0 ? ` (${detalles.join(', ')})` : '';
+                mostrarError(`La bolsa de café "${lote}" ya tiene un bloque de DISTRIBUCION registrado${detallesTexto}. No se puede crear otro bloque de distribución para esta bolsa.`);
+                return;
+            }
+
+            // Si hay error en la verificación, continuar pero mostrar advertencia
+            if (resultado.error) {
+                const continuar = confirm("No se pudo verificar si la bolsa existe. ¿Desea continuar de todos modos?");
+                if (!continuar) {
+                    return;
+                }
+            }
+
             const payload = {
                 tipo: "DISTRIBUCION",
-                lote: document.getElementById("lote").value,
+                lote: lote,
                 empresa: document.getElementById("empresa").value,
                 destino: document.getElementById("destino").value,
                 fecha: document.getElementById("fechaDistribucion").value
@@ -138,14 +306,14 @@
                     await response.json();
                     alert("✅ Bloque de DISTRIBUCION creado exitosamente en la blockchain");
                     document.getElementById("formDistribuidor").reset();
+                    ocultarMensajes();
                 } else {
                     const errorData = await response.json().catch(() => ({}));
-                    console.error("Error del servidor:", errorData);
-                    alert(`❌ Error al registrar la distribución: ${errorData.error || errorData.details || 'Error desconocido'}`);
+                    mostrarError(errorData.error || errorData.details || "Error al registrar la distribución.");
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert("❌ Error de conexión. Por favor, verifica que el servidor esté corriendo.");
+                mostrarError("Error de conexión. Por favor, verifica que el servidor esté corriendo.");
             }
         });
     </script>

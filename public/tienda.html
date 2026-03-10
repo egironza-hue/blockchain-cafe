@@ -65,8 +65,18 @@
 
         <!-- Listado de productos -->
         <section class="page-header" style="margin-top: 2rem;">
-            <h2>Productos disponibles</h2>
-            <p>Selecciona un producto para ver más detalles o registrarlo en la cadena de bloques</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 style="margin-bottom: 0.5rem;">Productos disponibles</h2>
+                    <p style="margin: 0;">Selecciona un producto para ver más detalles o registrarlo en la cadena de bloques</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="contador-productos" style="font-size: 0.9rem; color: var(--color-accent); font-weight: 600;"></span>
+                    <button id="limpiar-filtros" class="btn btn-outline" style="display: none; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        <i class="fa-solid fa-times" style="margin-right: 0.5rem;"></i>Limpiar filtros
+                    </button>
+                </div>
+            </div>
         </section>
 
         <div id="lista-productos" class="productos-grid">
@@ -94,23 +104,63 @@
 
         function aplicarFiltros(productos) {
             return productos.filter(p => {
+                // Filtro de búsqueda por texto
                 if (filtros.busqueda) {
-                    const texto = filtros.busqueda.toLowerCase();
-                    const coincideNombre = (p.nombre || '').toLowerCase().includes(texto);
-                    const coincideDesc = (p.descripcionCorta || '').toLowerCase().includes(texto);
-                    if (!coincideNombre && !coincideDesc) return false;
+                    const texto = filtros.busqueda.toLowerCase().trim();
+                    if (texto) {
+                        const coincideNombre = (p.nombre || '').toLowerCase().includes(texto);
+                        const coincideDesc = (p.descripcionCorta || '').toLowerCase().includes(texto);
+                        const coincideFinca = (p.finca || '').toLowerCase().includes(texto);
+                        const coincideRegion = (p.region || '').toLowerCase().includes(texto);
+                        const coincideVariedad = (p.variedad || '').toLowerCase().includes(texto);
+                        const coincideLote = (p.lote || '').toLowerCase().includes(texto);
+                        
+                        if (!coincideNombre && !coincideDesc && !coincideFinca && 
+                            !coincideRegion && !coincideVariedad && !coincideLote) {
+                            return false;
+                        }
+                    }
                 }
 
-                if (filtros.categoria !== 'todas' && p.categoria !== filtros.categoria) {
-                    return false;
+                // Filtro de categoría (región o variedad)
+                if (filtros.categoria !== 'todas') {
+                    // Verificar si coincide con región o variedad
+                    const coincideRegion = p.region === filtros.categoria;
+                    const coincideVariedad = p.variedad === filtros.categoria;
+                    if (!coincideRegion && !coincideVariedad) {
+                        return false;
+                    }
                 }
 
-                if (filtros.destacado && !p.destacado) return false;
-                if (filtros.masVendido && !p.masVendido) return false;
-                if (filtros.nuevo && !p.nuevo) return false;
+                // Los filtros de etiquetas (destacado, masVendido, nuevo) no aplican
+                // porque los productos de la blockchain no tienen estas propiedades
+                // Se mantienen en el código por si se agregan en el futuro
 
                 return true;
             });
+        }
+
+        function actualizarContador(total, filtrados) {
+            const contador = document.getElementById('contador-productos');
+            const limpiarBtn = document.getElementById('limpiar-filtros');
+            
+            if (contador) {
+                if (filtrados === total) {
+                    contador.textContent = `${total} producto${total !== 1 ? 's' : ''}`;
+                } else {
+                    contador.textContent = `${filtrados} de ${total} producto${total !== 1 ? 's' : ''}`;
+                }
+            }
+
+            // Mostrar botón de limpiar filtros si hay filtros activos
+            if (limpiarBtn) {
+                const hayFiltros = filtros.busqueda || 
+                                   filtros.categoria !== 'todas' || 
+                                   filtros.destacado || 
+                                   filtros.masVendido || 
+                                   filtros.nuevo;
+                limpiarBtn.style.display = hayFiltros ? 'block' : 'none';
+            }
         }
 
         function renderListaProductos() {
@@ -118,14 +168,32 @@
             if (!contenedor) return;
 
             if (!Array.isArray(productosOrigen) || productosOrigen.length === 0) {
-                contenedor.innerHTML = '<p>No hay productos de ORIGEN registrados en la blockchain.</p>';
+                contenedor.innerHTML = `
+                    <div class="alert alert-info" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-coffee" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No hay productos disponibles</p>
+                        <p style="font-size: 0.9rem; color: #666;">Registra el origen de un café para verlo aquí</p>
+                        <a href="origen.html" class="btn btn-primary" style="margin-top: 1rem;">Registrar Origen</a>
+                    </div>
+                `;
+                actualizarContador(0, 0);
                 return;
             }
 
             const productosFiltrados = aplicarFiltros(productosOrigen);
+            actualizarContador(productosOrigen.length, productosFiltrados.length);
 
             if (productosFiltrados.length === 0) {
-                contenedor.innerHTML = '<p>No se encontraron productos con los filtros seleccionados.</p>';
+                contenedor.innerHTML = `
+                    <div class="alert alert-info" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No se encontraron productos</p>
+                        <p style="font-size: 0.9rem; color: #666;">Intenta ajustar los filtros de búsqueda</p>
+                        <button onclick="limpiarFiltros()" class="btn btn-primary" style="margin-top: 1rem;">
+                            <i class="fa-solid fa-times" style="margin-right: 0.5rem;"></i>Limpiar filtros
+                        </button>
+                    </div>
+                `;
                 return;
             }
 
@@ -175,12 +243,36 @@
             });
         }
 
+        function limpiarFiltros() {
+            filtros.busqueda = '';
+            filtros.categoria = 'todas';
+            filtros.destacado = false;
+            filtros.masVendido = false;
+            filtros.nuevo = false;
+
+            // Limpiar campos del formulario
+            const inputBusqueda = document.getElementById('filtro-busqueda');
+            const selectCategoria = document.getElementById('filtro-categoria');
+            const chkDestacado = document.getElementById('filtro-destacado');
+            const chkMasVendido = document.getElementById('filtro-masvendido');
+            const chkNuevo = document.getElementById('filtro-nuevo');
+
+            if (inputBusqueda) inputBusqueda.value = '';
+            if (selectCategoria) selectCategoria.value = 'todas';
+            if (chkDestacado) chkDestacado.checked = false;
+            if (chkMasVendido) chkMasVendido.checked = false;
+            if (chkNuevo) chkNuevo.checked = false;
+
+            renderListaProductos();
+        }
+
         function inicializarFiltros() {
             const inputBusqueda = document.getElementById('filtro-busqueda');
             const selectCategoria = document.getElementById('filtro-categoria');
             const chkDestacado = document.getElementById('filtro-destacado');
             const chkMasVendido = document.getElementById('filtro-masvendido');
             const chkNuevo = document.getElementById('filtro-nuevo');
+            const limpiarBtn = document.getElementById('limpiar-filtros');
 
             if (inputBusqueda) {
                 inputBusqueda.addEventListener('input', (e) => {
@@ -216,6 +308,10 @@
                     renderListaProductos();
                 });
             }
+
+            if (limpiarBtn) {
+                limpiarBtn.addEventListener('click', limpiarFiltros);
+            }
         }
 
         async function cargarProductosDesdeBlockchain() {
@@ -246,6 +342,9 @@
                         ? descripcion.substring(0, 117) + '...'
                         : descripcion;
 
+                    // La categoría puede ser región o variedad
+                    const categoria = p.region || p.variedad || 'Sin categoría';
+
                     return {
                         id: index + 1,
                         lote: b.data.lote || `LOTE-${b.index}`,
@@ -254,6 +353,7 @@
                         productor: p.productor || '',
                         region: p.region || '',
                         variedad: p.variedad || '',
+                        categoria: categoria,
                         descripcionCorta,
                         imagen: p.imagen || 'img/cafe-banner.jpg',
                         origenTexto: [p.finca, p.region].filter(Boolean).join(' - '),
@@ -264,12 +364,21 @@
                 // Inicializar categorías en base a región / variedad
                 const select = document.getElementById('filtro-categoria');
                 if (select) {
+                    // Limpiar opciones existentes (excepto "Todas las categorías")
+                    while (select.children.length > 1) {
+                        select.removeChild(select.lastChild);
+                    }
+
                     const set = new Set();
                     productosOrigen.forEach(p => {
                         if (p.region) set.add(p.region);
                         if (p.variedad) set.add(p.variedad);
                     });
-                    Array.from(set).forEach(cat => {
+                    
+                    // Ordenar categorías alfabéticamente
+                    const categoriasOrdenadas = Array.from(set).sort();
+                    
+                    categoriasOrdenadas.forEach(cat => {
                         const option = document.createElement('option');
                         option.value = cat;
                         option.textContent = cat;

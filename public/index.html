@@ -143,16 +143,7 @@
             </div>
         </div>
 
-        <!-- Productos Destacados -->
-        <section class="page-header" style="margin-top: 4rem;">
-            <h2>Productos Destacados</h2>
-            <p>Explora algunos de nuestros cafés con trazabilidad en blockchain</p>
-        </section>
-
-        <div id="productos-destacados" class="row productos-grid">
-            <!-- Los productos destacados se cargarán aquí dinámicamente -->
-        </div>
-
+    
         <!-- Estadísticas de la Blockchain -->
         <section class="page-header" style="margin-top: 4rem;">
             <h2>Estado de la Blockchain</h2>
@@ -231,7 +222,7 @@
         </div>
     </footer>
 
-    <script src="js/productos.js"></script>
+   
     <script>
         // Cargar estadísticas de la blockchain
         async function cargarEstadisticas() {
@@ -296,66 +287,9 @@
             }
         }
 
-        function formatearPrecio(valor) {
-            try {
-                return new Intl.NumberFormat('es-CO', {
-                    style: 'currency',
-                    currency: 'COP',
-                    maximumFractionDigits: 0
-                }).format(valor);
-            } catch {
-                return valor + ' COP';
-            }
-        }
-
-        // Cargar productos destacados
-        function cargarProductosDestacados() {
-            if (!window.productos || !Array.isArray(window.productos)) return;
-
-            const contenedor = document.getElementById('productos-destacados');
-            if (!contenedor) return;
-
-            const destacados = window.productos.filter(p => p.destacado);
-
-            if (destacados.length === 0) {
-                contenedor.innerHTML = '<p>No hay productos destacados disponibles en este momento.</p>';
-                return;
-            }
-
-            contenedor.innerHTML = '';
-
-            destacados.forEach(producto => {
-                const col = document.createElement('div');
-                col.className = 'col-3';
-
-                let etiqueta = '';
-                if (producto.destacado) etiqueta = 'Destacado';
-                if (producto.masVendido) etiqueta = 'Más vendido';
-                if (producto.nuevo) etiqueta = 'Nuevo';
-
-                col.innerHTML = `
-                    <article class="card product-card" data-producto-id="${producto.id}">
-                        <div class="product-image-wrapper">
-                            <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" />
-                            ${etiqueta ? `<span class="product-tag">${etiqueta}</span>` : ''}
-                        </div>
-                        <div class="card-body">
-                            <h3 class="product-title">${producto.nombre}</h3>
-                            <p class="product-category">${producto.categoria}</p>
-                            <p class="product-description">${producto.descripcionCorta}</p>
-                            <div class="product-footer">
-                                <span class="product-price">${formatearPrecio(producto.precio)}</span>
-                                <a href="producto.html?id=${producto.id}" class="btn btn-secondary product-link">
-                                    Ver detalle
-                                </a>
-                            </div>
-                        </div>
-                    </article>
-                `;
-
-                contenedor.appendChild(col);
-            });
-        }
+    
+     
+       
 
         // Cargar contenido dinámico al cargar la página
         window.addEventListener('DOMContentLoaded', () => {

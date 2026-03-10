@@ -84,6 +84,69 @@ app.post('/api/addBlock', (req, res) => {
             });
         }
 
+        // Normalizar el tipo
+        const tipo = data.tipo ? String(data.tipo).toUpperCase() : '';
+
+        // Validaciones según el tipo de bloque
+        if (tipo === 'ORIGEN') {
+            // Verificar si la bolsa ya tiene un bloque de ORIGEN
+            if (blockchain.hasChain(lote)) {
+                const chain = blockchain.getChain(lote);
+                const tieneOrigen = chain.some(block => {
+                    const blockTipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                    return blockTipo === 'ORIGEN';
+                });
+
+                if (tieneOrigen) {
+                    return res.status(400).json({
+                        error: `La bolsa de café "${lote}" ya tiene un bloque de ORIGEN registrado. No se puede crear otro bloque de origen para esta bolsa.`
+                    });
+                }
+            }
+        } else if (tipo === 'DISTRIBUCION') {
+            // Verificar que la bolsa exista y tenga un bloque de ORIGEN
+            if (!blockchain.hasChain(lote)) {
+                return res.status(400).json({
+                    error: `La bolsa de café "${lote}" no existe. Primero debe registrar el origen de esta bolsa.`
+                });
+            }
+
+            const chain = blockchain.getChain(lote);
+            const tieneOrigen = chain.some(block => {
+                const blockTipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                return blockTipo === 'ORIGEN';
+            });
+
+            if (!tieneOrigen) {
+                return res.status(400).json({
+                    error: `La bolsa de café "${lote}" existe pero no tiene un bloque de ORIGEN. Primero debe registrar el origen.`
+                });
+            }
+
+            // Verificar si ya tiene un bloque de DISTRIBUCION
+            const tieneDistribucion = chain.some(block => {
+                const blockTipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                return blockTipo === 'DISTRIBUCION';
+            });
+
+            if (tieneDistribucion) {
+                const bloqueDistribucion = chain.find(block => {
+                    const blockTipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                    return blockTipo === 'DISTRIBUCION';
+                });
+                
+                const detalles = [];
+                if (bloqueDistribucion.data.empresa) detalles.push(`Empresa: ${bloqueDistribucion.data.empresa}`);
+                if (bloqueDistribucion.data.destino) detalles.push(`Destino: ${bloqueDistribucion.data.destino}`);
+                if (bloqueDistribucion.data.fecha) detalles.push(`Fecha: ${bloqueDistribucion.data.fecha}`);
+                const detallesTexto = detalles.length > 0 ? ` (${detalles.join(', ')})` : '';
+
+                return res.status(400).json({
+                    error: `La bolsa de café "${lote}" ya tiene un bloque de DISTRIBUCION registrado${detallesTexto}. No se puede crear otro bloque de distribución para esta bolsa.`
+                });
+            }
+        }
+
         // Verificar si es la primera vez que se registra este lote
         const isNewChain = !blockchain.hasChain(lote);
 
