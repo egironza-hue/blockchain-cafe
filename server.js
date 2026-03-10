@@ -32,12 +32,9 @@ app.use(express.static(path.join(__dirname, 'Public')));
 // INICIALIZACIÓN DE LA BLOCKCHAIN
 // ============================================
 
-// Crear una instancia de la blockchain con un bloque génesis
-// El bloque génesis es el primer bloque y contiene información inicial del sistema
-const blockchain = new Blockchain({
-    message: 'Bloque génesis - Sistema de trazabilidad de café',
-    tipo: 'genesis'
-});
+// Crear una instancia de la blockchain
+// Ahora cada lote tendrá su propia cadena independiente
+const blockchain = new Blockchain();
 
 // ============================================
 // ENDPOINTS DE LA API
@@ -45,7 +42,8 @@ const blockchain = new Blockchain({
 
 /**
  * POST /api/addBlock
- * Endpoint para agregar un nuevo bloque o actualizar uno existente
+ * Endpoint para agregar un nuevo bloque a la cadena de un lote específico
+ * Si el lote no existe, crea una nueva cadena con bloque génesis automáticamente
  * 
  * Request Body (formato 1):
  * {
@@ -69,59 +67,107 @@ app.post('/api/addBlock', (req, res) => {
     try {
         // El frontend puede enviar los datos directamente o envueltos en { data: {...} }
         // Normalizar para aceptar ambos formatos y mantener compatibilidad
-        // req.body contiene los datos enviados en el cuerpo de la petición
         let data = req.body.data || req.body;
 
         // Validar que existan datos
         if (!data) {
-            // Retornar error 400 (Bad Request) si no hay datos
             return res.status(400).json({
                 error: 'Se requiere el campo "data" en el cuerpo de la petición'
             });
         }
 
-        // Crear SIEMPRE un nuevo bloque inmutable en la blockchain
-        const resultBlock = blockchain.addBlock(data);
+        // Extraer el lote de los datos
+        const lote = data.lote;
+        if (!lote) {
+            return res.status(400).json({
+                error: 'Se requiere el campo "lote" en los datos'
+            });
+        }
+
+        // Verificar si es la primera vez que se registra este lote
+        const isNewChain = !blockchain.hasChain(lote);
+
+        // Agregar el bloque a la cadena del lote (crea la cadena si no existe)
+        const resultBlock = blockchain.addBlock(lote, data);
+
+        // Determinar el tipo de acción
+        const action = isNewChain ? 'chain_created' : 'block_added';
 
         // Retornar respuesta exitosa (201 Created)
         res.status(201).json({
-            message: 'Bloque agregado exitosamente',
-            action: 'created',
+            message: isNewChain 
+                ? `Nueva cadena creada para el lote "${lote}" y bloque agregado exitosamente`
+                : 'Bloque agregado exitosamente a la cadena del lote',
+            action: action,
+            lote: lote,
             block: resultBlock
         });
     } catch (error) {
         // Capturar cualquier error que ocurra durante el proceso
-        // console.error registra el error en la consola del servidor para debugging
         console.error('Error en /api/addBlock:', error);
 
         // Retornar error 500 (Internal Server Error) con detalles
         res.status(500).json({
             error: 'Error al agregar el bloque',
-            details: error.message // Mensaje de error específico
+            details: error.message
         });
     }
 });
 
 /**
  * GET /api/getChain
- * Endpoint para obtener toda la cadena de bloques
+ * Endpoint para obtener cadenas de bloques
  * 
- * Response:
+ * Query Parameters:
+ * - lote (opcional): Si se proporciona, retorna solo la cadena de ese lote
+ * 
+ * Response (sin parámetro lote):
  * {
- *   "chain": [ ... ],  // Array con todos los bloques
- *   "length": 2        // Número de bloques en la cadena
+ *   "chains": {                    // Objeto con todas las cadenas
+ *     "1": [Block, Block, ...],
+ *     "2": [Block, Block, ...]
+ *   },
+ *   "totalChains": 2,              // Número de cadenas (lotes)
+ *   "totalBlocks": 5               // Número total de bloques en todas las cadenas
+ * }
+ * 
+ * Response (con parámetro lote):
+ * {
+ *   "chain": [Block, Block, ...],  // Array con bloques del lote
+ *   "lote": "1",
+ *   "length": 3                    // Número de bloques en esta cadena
  * }
  */
 app.get('/api/getChain', (req, res) => {
     try {
-        // Obtener toda la cadena de bloques
-        const chain = blockchain.getChain();
+        const lote = req.query.lote;
 
-        // Retornar la cadena y su longitud en formato JSON
-        res.json({
-            chain: chain,           // Array completo de bloques
-            length: chain.length    // Número total de bloques
-        });
+        if (lote) {
+            // Obtener la cadena de un lote específico
+            const chain = blockchain.getChain(lote);
+            
+            res.json({
+                chain: chain,
+                lote: lote,
+                length: chain.length
+            });
+        } else {
+            // Obtener todas las cadenas
+            const allChains = blockchain.getAllChains();
+            const totalChains = blockchain.getTotalChains();
+            
+            // Calcular el total de bloques en todas las cadenas
+            let totalBlocks = 0;
+            Object.values(allChains).forEach(chain => {
+                totalBlocks += chain.length;
+            });
+
+            res.json({
+                chains: allChains,
+                totalChains: totalChains,
+                totalBlocks: totalBlocks
+            });
+        }
     } catch (error) {
         // Capturar errores y retornar respuesta de error
         res.status(500).json({
@@ -150,6 +196,7 @@ app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 
     // Mostrar información sobre la blockchain inicializada
-    // getChain().length retorna el número de bloques (debe ser 1 = solo génesis)
-    console.log(`Blockchain inicializada con ${blockchain.getChain().length} bloque(s)`);
+    const totalChains = blockchain.getTotalChains();
+    console.log(`Blockchain inicializada - Sistema de múltiples cadenas por lote`);
+    console.log(`Cadenas activas: ${totalChains}`);
 });

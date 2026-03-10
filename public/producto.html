@@ -231,18 +231,15 @@
             }
 
             try {
-                const response = await fetch('/api/getChain');
+                // Obtener la cadena específica del lote
+                const response = await fetch(`/api/getChain?lote=${encodeURIComponent(lote)}`);
                 const data = await response.json();
 
-                if (!response.ok || !data.chain) {
-                    throw new Error('No se pudo obtener la cadena');
+                if (!response.ok || !data.chain || data.chain.length === 0) {
+                    throw new Error('No se pudo obtener la cadena del lote');
                 }
 
-                const cadena = data.chain;
-                const bloquesLote = cadena.filter(b => {
-                    const loteBlock = b.data && b.data.lote ? String(b.data.lote).trim() : '';
-                    return loteBlock === String(lote).trim();
-                });
+                const bloquesLote = data.chain;
 
                 const bloqueOrigen = bloquesLote.find(b => {
                     const tipo = b.data && b.data.tipo ? String(b.data.tipo).toUpperCase() : '';

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trazabilidad - Café Blockchain Trace</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 </head>
 
 <body>
@@ -27,12 +28,37 @@
     <div class="container">
         <div class="page-header">
             <h1>Trazabilidad del Café</h1>
-            <p>Historial completo de la cadena de bloques o de un lote específico</p>
+            <p>Historial completo de la cadena de bloques o de una bolsa de café específica</p>
         </div>
 
-        <!-- Línea de Tiempo -->
-        <div class="timeline" id="timeline">
-            <!-- Los bloques se cargarán aquí dinámicamente -->
+        <!-- Buscador -->
+        <div class="row" style="margin-bottom: 2rem;">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="buscador">
+                                <i class="fa-solid fa-magnifying-glass" style="margin-right: 0.5rem; color: var(--color-accent);"></i>
+                                Buscar Bolsa de Café
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-input" 
+                                id="buscador" 
+                                placeholder="Buscar por número de bolsa o nombre del producto..."
+                                style="font-size: 1rem; padding: 1rem;">
+                            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+                                Puedes buscar por número de bolsa de café o por nombre del producto
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedor de Cadenas Horizontales -->
+        <div id="timeline" style="display: flex; flex-direction: column; gap: 3rem;">
+            <!-- Las cadenas se cargarán aquí dinámicamente -->
         </div>
 
         <div class="text-center mt-4">
@@ -41,122 +67,231 @@
     </div>
 
     <script>
+        // Variable global para almacenar todas las cadenas
+        let todasLasCadenas = [];
+
         function obtenerParametroLote() {
             const params = new URLSearchParams(window.location.search);
             return params.get('lote');
         }
 
+        function crearFlecha() {
+            return `
+                <div style="display: flex; align-items: center; justify-content: center; min-width: 60px; padding: 0 1rem;">
+                    <div style="width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-left: 30px solid var(--color-accent);"></div>
+                </div>
+            `;
+        }
+
+        /**
+         * Obtiene el nombre del producto de una cadena
+         */
+        function obtenerNombreProducto(chain) {
+            const bloqueOrigen = chain.find(block => {
+                const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                return tipo === 'ORIGEN' && block.data.producto && block.data.producto.nombre;
+            });
+            return bloqueOrigen ? bloqueOrigen.data.producto.nombre : '';
+        }
+
+        /**
+         * Filtra las cadenas según el término de búsqueda
+         */
+        function filtrarCadenas(termino) {
+            if (!termino || termino.trim() === '') {
+                return todasLasCadenas;
+            }
+
+            const terminoLower = termino.toLowerCase().trim();
+
+            return todasLasCadenas.filter(({ lote, chain }) => {
+                // Buscar por número de bolsa de café
+                const loteMatch = String(lote).toLowerCase().includes(terminoLower);
+                
+                // Buscar por nombre del producto
+                const nombreProducto = obtenerNombreProducto(chain);
+                const nombreMatch = nombreProducto.toLowerCase().includes(terminoLower);
+
+                return loteMatch || nombreMatch;
+            });
+        }
+
+        /**
+         * Renderiza las cadenas filtradas
+         */
+        function renderizarCadenas(cadenas) {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+
+            if (cadenas.length === 0) {
+                timeline.innerHTML = `
+                    <div class="alert alert-info" style="text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-search" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No se encontraron resultados</p>
+                        <p style="font-size: 0.9rem; color: #666;">Intenta con otro término de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Procesar cada cadena (bolsa de café)
+            cadenas.forEach(({ lote, chain }) => {
+                // Ordenar por fecha para asegurar ORIGEN -> DISTRIBUCION
+                const cadenaOrdenada = [...chain].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Obtener nombre del producto si existe
+                const nombreProducto = obtenerNombreProducto(chain);
+
+                // Crear contenedor para esta bolsa de café (vertical)
+                const bolsaContainer = document.createElement('div');
+                bolsaContainer.className = 'bolsa-container';
+                bolsaContainer.style.cssText = 'display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;';
+
+                // Encabezado de la bolsa de café
+                const header = document.createElement('div');
+                header.innerHTML = `
+                    <div class="card" style="background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); color: white; margin-bottom: 1rem;">
+                        <div class="card-body" style="text-align: center; padding: 1.5rem;">
+                            <h2 style="margin: 0; font-size: 1.8rem; font-weight: 600;">Bolsa de Café: ${lote}</h2>
+                            ${nombreProducto ? `<p style="margin: 0.5rem 0 0 0; opacity: 0.95; font-size: 1.1rem; font-weight: 500;">${nombreProducto}</p>` : ''}
+                            <p style="margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 1rem;">${cadenaOrdenada.length} bloque(s)</p>
+                        </div>
+                    </div>
+                `;
+                bolsaContainer.appendChild(header);
+
+                // Contenedor horizontal para los bloques
+                const bloquesContainer = document.createElement('div');
+                bloquesContainer.style.cssText = 'display: flex; align-items: stretch; flex-wrap: wrap; gap: 1rem; overflow-x: auto; padding: 1rem 0;';
+
+                cadenaOrdenada.forEach((block, index) => {
+                    const fecha = new Date(block.timestamp).toLocaleString('es-ES');
+                    const tipoRaw = block.data.tipo || 'genesis';
+                    const tipo = String(tipoRaw).toUpperCase();
+
+                    let badgeClass = 'timeline-badge-genesis';
+                    let badgeText = 'Génesis';
+                    let borderColor = 'var(--color-secondary)';
+
+                    if (tipo === 'ORIGEN') {
+                        badgeClass = 'timeline-badge-origen';
+                        badgeText = 'Origen';
+                        borderColor = 'var(--color-accent)';
+                    } else if (tipo === 'DISTRIBUCION') {
+                        badgeClass = 'timeline-badge-distribucion';
+                        badgeText = 'Distribución';
+                        borderColor = 'var(--color-primary)';
+                    }
+
+                    // Determinar qué información mostrar según los datos disponibles
+                    let contentHTML = '';
+
+                    if (tipo === 'GENESIS') {
+                        contentHTML = `<p style="color: #666;">${block.data.message || 'Bloque génesis del sistema'}</p>`;
+                    } else {
+                        if (tipo === 'ORIGEN' && block.data.producto) {
+                            const p = block.data.producto;
+                            contentHTML += '<div style="margin-bottom: 0.5rem;">';
+                            contentHTML += '<strong style="color: var(--color-accent); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">🌱 Origen</strong>';
+                            if (p.finca) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Finca:</strong> ${p.finca}</p>`;
+                            if (p.productor) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Productor:</strong> ${p.productor}</p>`;
+                            if (p.region) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Región:</strong> ${p.region}</p>`;
+                            if (p.variedad) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Variedad:</strong> ${p.variedad}</p>`;
+                            if (p.fechaCosecha) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Cosecha:</strong> ${p.fechaCosecha}</p>`;
+                            contentHTML += '</div>';
+                        } else if (tipo === 'DISTRIBUCION') {
+                            contentHTML += '<div style="margin-bottom: 0.5rem;">';
+                            contentHTML += '<strong style="color: var(--color-primary); display: block; margin-bottom: 0.5rem; font-size: 0.9rem;">🚚 Distribución</strong>';
+                            if (block.data.empresa) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Empresa:</strong> ${block.data.empresa}</p>`;
+                            if (block.data.destino) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Destino:</strong> ${block.data.destino}</p>`;
+                            if (block.data.fecha) contentHTML += `<p style="margin: 0.25rem 0; font-size: 0.85rem;"><strong>Fecha:</strong> ${block.data.fecha}</p>`;
+                            contentHTML += '</div>';
+                        } else {
+                            contentHTML += `<p style="color: #999; font-size: 0.85rem;">Evento de tipo ${tipo}</p>`;
+                        }
+                    }
+
+                    // Crear tarjeta de bloque
+                    const blockCard = document.createElement('div');
+                    blockCard.style.cssText = 'min-width: 280px; max-width: 320px; flex: 0 0 auto;';
+                    blockCard.innerHTML = `
+                        <div class="card" style="height: 100%; border-top: 4px solid ${borderColor};">
+                            <div style="margin-bottom: 0.75rem;">
+                                <span class="timeline-badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--color-accent); font-weight: 600; margin-bottom: 0.5rem;">
+                                ${fecha}
+                            </div>
+                            <div style="font-size: 1rem; color: var(--color-primary); font-weight: 600; margin-bottom: 0.75rem;">
+                                Bloque #${block.index}
+                            </div>
+                            <div style="color: var(--color-text-dark); font-size: 0.9rem; line-height: 1.5;">
+                                ${contentHTML}
+                            </div>
+                            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--color-secondary);">
+                                <p style="font-size: 0.75rem; color: #666; word-break: break-all;"><strong>Hash:</strong> <code style="font-size: 0.7rem;">${block.hash.substring(0, 16)}...</code></p>
+                            </div>
+                        </div>
+                    `;
+
+                    bloquesContainer.appendChild(blockCard);
+
+                    // Agregar flecha entre bloques (excepto el último)
+                    if (index < cadenaOrdenada.length - 1) {
+                        const flecha = document.createElement('div');
+                        flecha.style.cssText = 'display: flex; align-items: center; justify-content: center; min-width: 40px; padding: 0 0.5rem;';
+                        flecha.innerHTML = `
+                            <div style="width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent; border-left: 24px solid var(--color-accent);"></div>
+                        `;
+                        bloquesContainer.appendChild(flecha);
+                    }
+                });
+
+                bolsaContainer.appendChild(bloquesContainer);
+                timeline.appendChild(bolsaContainer);
+            });
+        }
+
         async function cargarTrazabilidad() {
             try {
-                const response = await fetch('/api/getChain');
+                const loteParam = obtenerParametroLote();
+                const url = loteParam ? `/api/getChain?lote=${encodeURIComponent(loteParam)}` : '/api/getChain';
+                const response = await fetch(url);
                 const data = await response.json();
 
                 const timeline = document.getElementById('timeline');
                 timeline.innerHTML = '';
 
-                if (data.chain && data.chain.length > 0) {
-                    const loteParam = obtenerParametroLote();
-                    let cadena = data.chain;
+                let cadenas = [];
 
-                    if (loteParam) {
-                        const loteFiltro = String(loteParam).trim();
-                        cadena = data.chain.filter(b => {
-                            const loteBlock = b.data && b.data.lote ? String(b.data.lote).trim() : '';
-                            return loteBlock === loteFiltro;
-                        });
-                    }
-
-                    if (cadena.length === 0) {
-                        timeline.innerHTML = '<div class="alert alert-info">No se encontraron bloques para el lote especificado.</div>';
+                if (loteParam) {
+                    // Si hay parámetro lote, usar la cadena específica
+                    if (data.chain && data.chain.length > 0) {
+                        cadenas = [{ lote: loteParam, chain: data.chain }];
+                    } else {
+                        timeline.innerHTML = '<div class="alert alert-info">No se encontraron bloques para la bolsa de café especificada.</div>';
                         return;
                     }
-
-                    // Ordenar por fecha para asegurar ORIGEN -> DISTRIBUCION
-                    cadena.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-                    cadena.forEach((block) => {
-                        const timelineItem = document.createElement('div');
-                        timelineItem.className = 'timeline-item';
-
-                        const fecha = new Date(block.timestamp).toLocaleString('es-ES');
-                        const tipoRaw = block.data.tipo || 'genesis';
-                        const tipo = String(tipoRaw).toUpperCase();
-
-                        let badgeClass = 'timeline-badge-genesis';
-                        let badgeText = 'Génesis';
-
-                        if (tipo === 'ORIGEN') {
-                            badgeClass = 'timeline-badge-origen';
-                            badgeText = 'Origen';
-                        } else if (tipo === 'DISTRIBUCION') {
-                            badgeClass = 'timeline-badge-distribucion';
-                            badgeText = 'Distribución';
-                        }
-
-                        // Determinar qué información mostrar según los datos disponibles
-                        let contentHTML = '';
-                        let badgesHTML = '';
-
-                        if (tipo === 'GENESIS') {
-                            // Bloque génesis
-                            contentHTML = `<p>${block.data.message || 'Bloque génesis del sistema'}</p>`;
-                            badgesHTML = `<span class="timeline-badge timeline-badge-genesis">Génesis</span>`;
-                        } else {
-                            // Bloques de ORIGEN / DISTRIBUCION para un lote
-                            contentHTML = '<div style="display: grid; gap: 0.75rem;">';
-
-                            if (tipo === 'ORIGEN' && block.data.producto) {
-                                const p = block.data.producto;
-                                contentHTML += '<div style="border-left: 3px solid var(--color-accent); padding-left: 1rem; margin-bottom: 0.5rem;">';
-                                contentHTML += '<strong style="color: var(--color-accent); display: block; margin-bottom: 0.5rem;">🌱 Información de Origen</strong>';
-                                if (block.data.lote) contentHTML += `<p><strong>Lote:</strong> ${block.data.lote}</p>`;
-                                if (p.finca) contentHTML += `<p><strong>Finca:</strong> ${p.finca}</p>`;
-                                if (p.productor) contentHTML += `<p><strong>Productor:</strong> ${p.productor}</p>`;
-                                if (p.region) contentHTML += `<p><strong>Región:</strong> ${p.region}</p>`;
-                                if (p.variedad) contentHTML += `<p><strong>Variedad:</strong> ${p.variedad}</p>`;
-                                if (p.fechaCosecha) contentHTML += `<p><strong>Fecha de cosecha:</strong> ${p.fechaCosecha}</p>`;
-                                contentHTML += '</div>';
-                                badgesHTML = '<span class="timeline-badge timeline-badge-origen">Origen</span>';
-                            } else if (tipo === 'DISTRIBUCION') {
-                                contentHTML += '<div style="border-left: 3px solid var(--color-primary); padding-left: 1rem; margin-top: 0.5rem;">';
-                                contentHTML += '<strong style="color: var(--color-primary); display: block; margin-bottom: 0.5rem;">🚚 Información de Distribución</strong>';
-                                if (block.data.lote) contentHTML += `<p><strong>Lote:</strong> ${block.data.lote}</p>`;
-                                if (block.data.empresa) contentHTML += `<p><strong>Empresa:</strong> ${block.data.empresa}</p>`;
-                                if (block.data.destino) contentHTML += `<p><strong>Destino:</strong> ${block.data.destino}</p>`;
-                                if (block.data.fecha) contentHTML += `<p><strong>Fecha:</strong> ${block.data.fecha}</p>`;
-                                contentHTML += '</div>';
-                                badgesHTML = '<span class="timeline-badge timeline-badge-distribucion">Distribución</span>';
-                            } else {
-                                // Otros tipos de eventos
-                                contentHTML += `<p style="color: #999;">Evento de tipo ${tipo}</p>`;
-                                badgesHTML = `<span class="timeline-badge timeline-badge-genesis">${tipo}</span>`;
-                            }
-
-                            contentHTML += '</div>';
-                        }
-
-                        timelineItem.innerHTML = `
-                            <div class="timeline-card">
-                                <div class="timeline-date">${fecha}</div>
-                                <div class="timeline-title">Bloque #${block.index}${block.data.lote ? ` - Lote ${block.data.lote}` : ''}</div>
-                                <div class="timeline-content">
-                                    ${contentHTML}
-                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-secondary);">
-                                        <p style="font-size: 0.85rem; color: #666;"><strong>Hash:</strong> <code>${block.hash.substring(0, 20)}...</code></p>
-                                        <p style="font-size: 0.85rem; color: #666;"><strong>Hash Anterior:</strong> <code>${block.previousHash ? block.previousHash.substring(0, 20) + '...' : 'N/A'}</code></p>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 0.75rem;">
-                                    ${badgesHTML}
-                                </div>
-                            </div>
-                        `;
-
-                        timeline.appendChild(timelineItem);
-                    });
                 } else {
-                    timeline.innerHTML = '<div class="alert alert-info">No hay bloques en la cadena aún.</div>';
+                    // Si no hay parámetro, mostrar todas las cadenas
+                    if (data.chains && Object.keys(data.chains).length > 0) {
+                        // Convertir objeto de cadenas a array
+                        cadenas = Object.entries(data.chains).map(([lote, chain]) => ({
+                            lote: lote,
+                            chain: chain
+                        }));
+                    } else {
+                        timeline.innerHTML = '<div class="alert alert-info">No hay bloques en la cadena aún.</div>';
+                        todasLasCadenas = [];
+                        return;
+                    }
                 }
+
+                // Guardar todas las cadenas para el filtrado
+                todasLasCadenas = cadenas;
+
+                // Renderizar todas las cadenas
+                renderizarCadenas(cadenas);
             } catch (error) {
                 console.error('Error al cargar trazabilidad:', error);
                 document.getElementById('timeline').innerHTML =
@@ -164,9 +299,36 @@
             }
         }
 
+        // Inicializar el buscador
+        function inicializarBuscador() {
+            const buscador = document.getElementById('buscador');
+            if (buscador) {
+                buscador.addEventListener('input', (e) => {
+                    const termino = e.target.value;
+                    const cadenasFiltradas = filtrarCadenas(termino);
+                    renderizarCadenas(cadenasFiltradas);
+                });
+
+                // Permitir búsqueda con Enter
+                buscador.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const termino = e.target.value;
+                        const cadenasFiltradas = filtrarCadenas(termino);
+                        renderizarCadenas(cadenasFiltradas);
+                    }
+                });
+            }
+        }
+
+
         // Cargar trazabilidad al cargar la página
-        window.addEventListener('DOMContentLoaded', cargarTrazabilidad);
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarTrazabilidad();
+            inicializarBuscador();
+        });
     </script>
 </body>
 
+</html>
 </html>

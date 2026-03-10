@@ -37,56 +37,103 @@ class Block {
 }
 
 /**
- * Clase Blockchain - Gestiona la cadena completa de bloques
- * Implementa la lógica para agregar bloques y buscar por lote
+ * Clase Blockchain - Gestiona múltiples cadenas de bloques independientes por lote
+ * Cada lote tiene su propia cadena de bloques que no se enlaza con otros lotes
  */
 class Blockchain {
     /**
      * Constructor de la blockchain
-     * Inicializa la cadena con un bloque génesis
-     * @param {object} genesis - Datos para el bloque génesis
+     * Inicializa un objeto vacío para almacenar múltiples cadenas por lote
      */
-    constructor(genesis) {
-        // Inicializa el array chain con el bloque génesis
-        // El bloque génesis siempre es el primero (índice 0)
-        this.chain = [this.createFirstBlock(genesis)];
+    constructor() {
+        // Estructura para almacenar múltiples blockchains
+        // Formato: { "lote1": [Block, Block, ...], "lote2": [Block, Block, ...], ... }
+        this.chains = {};
     }
 
     /**
-     * Crea el bloque génesis (primer bloque de la cadena)
-     * @param {object} genesis - Datos del bloque génesis
+     * Normaliza el número de lote para evitar duplicados por espacios o formato
+     * @param {string|number} lote - Número de lote a normalizar
+     * @returns {string} Lote normalizado o null si no es válido
+     */
+    normalizeLote(lote) {
+        if (!lote) return null;
+        const normalized = String(lote).trim();
+        return normalized || null;
+    }
+
+    /**
+     * Crea el bloque génesis (primer bloque de una cadena)
+     * @param {string} lote - Número de lote para el bloque génesis
      * @returns {Block} Bloque génesis con índice 0
      */
-    createFirstBlock(genesis) {
+    createFirstBlock(lote) {
+        const genesisData = {
+            message: `Bloque génesis - Lote ${lote}`,
+            tipo: 'GENESIS',
+            lote: lote
+        };
         // El bloque génesis tiene índice 0 y previousHash vacío
-        return new Block(0, genesis);
+        return new Block(0, genesisData, '');
     }
 
     /**
-     * Obtiene el último bloque de la cadena
-     * @returns {Block} Último bloque agregado
+     * Crea una nueva cadena de bloques para un lote específico
+     * @param {string|number} lote - Número de lote
+     * @returns {Array<Block>} Nueva cadena con bloque génesis
      */
-    getLastBlock() {
-        // Retorna el último elemento del array chain
-        // chain.length - 1 es el índice del último elemento
-        return this.chain[this.chain.length - 1];
+    createChain(lote) {
+        const normalizedLote = this.normalizeLote(lote);
+        if (!normalizedLote) {
+            throw new Error('El lote es requerido para crear una cadena');
+        }
+
+        // Si la cadena ya existe, retornarla sin crear una nueva
+        if (this.chains[normalizedLote]) {
+            return this.chains[normalizedLote];
+        }
+
+        // Crear nueva cadena con bloque génesis
+        const genesisBlock = this.createFirstBlock(normalizedLote);
+        this.chains[normalizedLote] = [genesisBlock];
+
+        return this.chains[normalizedLote];
     }
 
     /**
-     * Agrega un nuevo bloque INMUTABLE a la cadena.
+     * Obtiene el último bloque de una cadena específica
+     * @param {string|number} lote - Número de lote
+     * @returns {Block|null} Último bloque de la cadena o null si no existe
+     */
+    getLastBlock(lote) {
+        const normalizedLote = this.normalizeLote(lote);
+        if (!normalizedLote || !this.chains[normalizedLote]) {
+            return null;
+        }
+
+        const chain = this.chains[normalizedLote];
+        return chain[chain.length - 1];
+    }
+
+    /**
+     * Agrega un nuevo bloque INMUTABLE a la cadena de un lote específico.
+     * Si el lote no existe, crea una nueva cadena con bloque génesis.
      * Cada evento de trazabilidad (ORIGEN, DISTRIBUCION, etc.) genera un bloque nuevo.
-     * @param {object} data - Datos del bloque a agregar/actualizar
+     * @param {string|number} lote - Número de lote
+     * @param {object} data - Datos del bloque a agregar
      * @returns {Block} Bloque creado
      */
-    addBlock(data) {
-        // Normalizar el lote si existe en los datos
+    addBlock(lote, data) {
+        const normalizedLote = this.normalizeLote(lote);
+        if (!normalizedLote) {
+            throw new Error('El lote es requerido para agregar un bloque');
+        }
+
+        // Normalizar el lote en los datos
         if (data.lote) {
-            const normalizedLote = String(data.lote).trim();
-            if (normalizedLote) {
-                data.lote = normalizedLote;
-            } else {
-                delete data.lote;
-            }
+            data.lote = normalizedLote;
+        } else {
+            data.lote = normalizedLote;
         }
 
         // Normalizar tipo a mayúsculas si existe
@@ -94,20 +141,71 @@ class Blockchain {
             data.tipo = data.tipo.toUpperCase();
         }
 
-        // Crear siempre un nuevo bloque usando el último como referencia
-        const prevBlock = this.getLastBlock();
+        // Si la cadena no existe, crearla con bloque génesis
+        if (!this.chains[normalizedLote]) {
+            this.createChain(normalizedLote);
+        }
+
+        // Obtener el último bloque de esta cadena específica
+        const prevBlock = this.getLastBlock(normalizedLote);
+        if (!prevBlock) {
+            throw new Error(`Error: No se pudo obtener el último bloque de la cadena del lote ${normalizedLote}`);
+        }
+
+        // Crear nuevo bloque usando el último bloque de esta cadena como referencia
         const block = new Block(prevBlock.index + 1, data, prevBlock.hash);
 
-        this.chain.push(block);
+        // Agregar el bloque a la cadena específica del lote
+        this.chains[normalizedLote].push(block);
+
         return block;
     }
 
     /**
-     * Obtiene toda la cadena de bloques
-     * @returns {Array<Block>} Array con todos los bloques de la cadena
+     * Obtiene la cadena de bloques de un lote específico
+     * @param {string|number} lote - Número de lote (opcional)
+     * @returns {Array<Block>|Object} Si se proporciona lote, retorna la cadena de ese lote.
+     *                                Si no se proporciona, retorna todas las cadenas.
      */
-    getChain() {
-        return this.chain;
+    getChain(lote = null) {
+        if (lote === null) {
+            // Retornar todas las cadenas
+            return this.chains;
+        }
+
+        const normalizedLote = this.normalizeLote(lote);
+        if (!normalizedLote) {
+            return [];
+        }
+
+        // Retornar la cadena específica del lote o array vacío si no existe
+        return this.chains[normalizedLote] || [];
+    }
+
+    /**
+     * Obtiene todas las cadenas de bloques
+     * @returns {Object} Objeto con todas las cadenas indexadas por lote
+     */
+    getAllChains() {
+        return this.chains;
+    }
+
+    /**
+     * Verifica si existe una cadena para un lote específico
+     * @param {string|number} lote - Número de lote
+     * @returns {boolean} True si la cadena existe, false en caso contrario
+     */
+    hasChain(lote) {
+        const normalizedLote = this.normalizeLote(lote);
+        return normalizedLote ? this.chains.hasOwnProperty(normalizedLote) : false;
+    }
+
+    /**
+     * Obtiene el número total de cadenas (lotes) registradas
+     * @returns {number} Número de cadenas diferentes
+     */
+    getTotalChains() {
+        return Object.keys(this.chains).length;
     }
 }
 

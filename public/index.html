@@ -241,13 +241,28 @@
 
                 const statsDiv = document.getElementById('blockchain-stats');
 
-                if (data.chain && data.chain.length > 0) {
-                    const totalBloques = data.length;
-                    const bloquesOrigen = data.chain.filter(b => b.data.tipo === 'origen').length;
-                    const bloquesDistribucion = data.chain.filter(b => b.data.tipo === 'distribucion').length;
+                if (data.chains && Object.keys(data.chains).length > 0) {
+                    // Calcular estadísticas de todas las cadenas
+                    let totalBloques = 0;
+                    let bloquesOrigen = 0;
+                    let bloquesDistribucion = 0;
+                    const totalLotes = data.totalChains || Object.keys(data.chains).length;
+
+                    Object.values(data.chains).forEach(chain => {
+                        totalBloques += chain.length;
+                        chain.forEach(block => {
+                            const tipo = block.data && block.data.tipo ? String(block.data.tipo).toUpperCase() : '';
+                            if (tipo === 'ORIGEN') bloquesOrigen++;
+                            if (tipo === 'DISTRIBUCION') bloquesDistribucion++;
+                        });
+                    });
 
                     statsDiv.innerHTML = `
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; margin-bottom: 1rem;">
+                            <div>
+                                <div style="font-size: 2.5rem; font-weight: bold; color: var(--color-primary);">${totalLotes}</div>
+                                <div style="color: var(--color-text-dark);">Lotes Registrados</div>
+                            </div>
                             <div>
                                 <div style="font-size: 2.5rem; font-weight: bold; color: var(--color-primary);">${totalBloques}</div>
                                 <div style="color: var(--color-text-dark);">Total de Bloques</div>

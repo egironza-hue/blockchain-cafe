@@ -69,7 +69,7 @@
             <p>Selecciona un producto para ver más detalles o registrarlo en la cadena de bloques</p>
         </section>
 
-        <div id="lista-productos" class="row productos-grid">
+        <div id="lista-productos" class="productos-grid">
             <!-- Las tarjetas de productos se cargarán aquí dinámicamente -->
         </div>
     </div>
@@ -132,32 +132,46 @@
             contenedor.innerHTML = '';
 
             productosFiltrados.forEach(producto => {
-                const col = document.createElement('div');
-                col.className = 'col-3';
+                const productCard = document.createElement('article');
+                productCard.className = 'card product-card';
+                productCard.setAttribute('data-producto-id', producto.id);
 
-                col.innerHTML = `
-                    <article class="card product-card" data-producto-id="${producto.id}">
-                        <div class="product-image-wrapper">
-                            <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" />
-                            ${producto.etiqueta ? `<span class="product-tag">${producto.etiqueta}</span>` : ''}
-                        </div>
-                        <div class="card-body">
-                            <h3 class="product-title">${producto.nombre}</h3>
-                            <p class="product-category">${producto.origenTexto}</p>
-                            <p class="product-description">${producto.descripcionCorta}</p>
-                            <div class="product-footer">
-                                <span class="product-price">${producto.lote}</span>
-                                <div style="display:flex; flex-direction:column; gap:0.25rem; align-items:flex-end;">
-                                    <a href="producto.html?lote=${encodeURIComponent(producto.lote)}" class="btn btn-secondary product-link">
-                                        Ver detalle
-                                    </a>
+                productCard.innerHTML = `
+                    <div class="product-image-wrapper">
+                        <img src="${producto.imagen}" alt="${producto.nombre}" class="product-image" onerror="this.src='img/cafe-banner.jpg'" />
+                        ${producto.etiqueta ? `<span class="product-tag">${producto.etiqueta}</span>` : ''}
+                    </div>
+                    <div class="card-body" style="padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1;">
+                        <h3 class="product-title" style="font-size: 1.3rem; font-weight: 600; color: var(--color-primary); margin-bottom: 0.5rem; line-height: 1.3;">
+                            ${producto.nombre}
+                        </h3>
+                        ${producto.origenTexto ? `
+                            <p class="product-category" style="font-size: 0.9rem; color: var(--color-accent); margin-bottom: 0.75rem; font-weight: 500;">
+                                <i class="fa-solid fa-map-marker-alt" style="margin-right: 0.4rem;"></i>${producto.origenTexto}
+                            </p>
+                        ` : ''}
+                        ${producto.descripcionCorta ? `
+                            <p class="product-description" style="font-size: 0.9rem; color: var(--color-text-dark); line-height: 1.5; margin-bottom: 1rem; flex-grow: 1; opacity: 0.85;">
+                                ${producto.descripcionCorta}
+                            </p>
+                        ` : ''}
+                        <div class="product-footer" style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-secondary);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 1rem;">
+                                <div style="flex-shrink: 0;">
+                                    <span style="font-size: 0.85rem; color: #666; display: block; margin-bottom: 0.25rem; font-weight: 500;">Bolsa de Café</span>
+                                    <span class="product-price" style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary);">
+                                        #${producto.lote}
+                                    </span>
                                 </div>
+                                <a href="producto.html?lote=${encodeURIComponent(producto.lote)}" class="btn btn-secondary product-link" style="white-space: nowrap; flex-shrink: 0;">
+                                    Ver detalle
+                                </a>
                             </div>
                         </div>
-                    </article>
+                    </div>
                 `;
 
-                contenedor.appendChild(col);
+                contenedor.appendChild(productCard);
             });
         }
 
@@ -209,14 +223,19 @@
                 const response = await fetch('/api/getChain');
                 const data = await response.json();
 
-                if (!response.ok || !data.chain) {
+                if (!response.ok || !data.chains) {
                     throw new Error('No se pudo obtener la cadena');
                 }
 
-                // Filtrar bloques de tipo ORIGEN
-                const bloquesOrigen = data.chain.filter(b => {
-                    const tipo = b.data && b.data.tipo ? String(b.data.tipo).toUpperCase() : '';
-                    return tipo === 'ORIGEN' && b.data.producto;
+                // Recopilar todos los bloques de tipo ORIGEN de todas las cadenas
+                const bloquesOrigen = [];
+                Object.values(data.chains).forEach(chain => {
+                    chain.forEach(b => {
+                        const tipo = b.data && b.data.tipo ? String(b.data.tipo).toUpperCase() : '';
+                        if (tipo === 'ORIGEN' && b.data.producto) {
+                            bloquesOrigen.push(b);
+                        }
+                    });
                 });
 
                 // Mapear a estructura de producto para la tienda
